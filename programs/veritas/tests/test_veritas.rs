@@ -20,6 +20,7 @@ struct Harness {
     program_id: Pubkey,
     coordinator: Keypair,
     config: Pubkey,
+    stake_mint: Pubkey,
 }
 
 impl Harness {
@@ -31,12 +32,19 @@ impl Harness {
         svm.add_program(program_id, bytes).unwrap();
         svm.airdrop(&coordinator.pubkey(), 10_000_000_000).unwrap();
 
+        // USDC stand-in mint (6 decimals), authority = coordinator.
+        let stake_mint = litesvm_token::CreateMint::new(&mut svm, &coordinator)
+            .decimals(6)
+            .send()
+            .unwrap();
+
         let config = Pubkey::find_program_address(&[b"config"], &program_id).0;
-        let mut h = Harness { svm, program_id, coordinator, config };
+        let mut h = Harness { svm, program_id, coordinator, config, stake_mint };
         // fee 200 bps, tolerance 100 bps (1%)
         let ix = h.ix(
             veritas::instruction::Initialize {
                 coordinator: h.coordinator.pubkey(),
+                stake_mint: h.stake_mint,
                 fee_bps: 200,
                 tolerance_bps: 100,
             }
@@ -175,6 +183,12 @@ fn num(v: i64) -> Vec<u8> {
     v.to_le_bytes().to_vec()
 }
 
+/// SPL token account balance: u64 LE at offset 64 (layout is frozen).
+fn token_amount(h: &Harness, account: &Pubkey) -> u64 {
+    let data = h.svm.get_account(account).unwrap().data;
+    u64::from_le_bytes(data[64..72].try_into().unwrap())
+}
+
 #[test]
 fn numeric_round_catches_the_liar() {
     let mut h = Harness::new();
@@ -311,6 +325,90 @@ fn close_request_reclaims_rent() {
     let after = h.svm.get_balance(&h.coordinator.pubkey()).unwrap();
     assert!(after > before, "rent reclaimed to coordinator");
     assert!(h.svm.get_account(&request_pda).is_none() || h.svm.get_account(&request_pda).unwrap().data.is_empty());
+}
+
+#[test]
+fn stake_lifecycle_with_slash() {
+    let mut h = Harness::new();
+    let (o1, s1) = h.register_seller("staker");
+    let (o2, s2) = h.register_seller("honest");
+
+    // Fund the staker with 100 USDC (6 decimals) in an ATA.
+    let owner_ata = litesvm_token::CreateAssociatedTokenAccount::new(
+        &mut h.svm,
+        &h.coordinator,
+        &h.stake_mint,
+    )
+    .owner(&o1.pubkey())
+    .send()
+    .unwrap();
+    litesvm_token::MintTo::new(&mut h.svm, &h.coordinator, &h.stake_mint, &owner_ata, 100_000_000)
+        .send()
+        .unwrap();
+
+    let custody =
+        Pubkey::find_program_address(&[b"stake", o1.pubkey().as_ref()], &h.program_id).0;
+
+    // add_stake 50 USDC
+    let ix = h.ix(
+        veritas::instruction::AddStake { amount: 50_000_000 }.data(),
+        veritas::accounts::AddStake {
+            owner: o1.pubkey(),
+            seller: s1,
+            config: h.config,
+            stake_mint: h.stake_mint,
+            owner_token: owner_ata,
+            custody,
+            token_program: anchor_spl::token::ID,
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+    );
+    h.send(&[ix], &[&o1]).unwrap();
+
+    assert_eq!(h.get_seller(s1).stake, 50_000_000);
+    assert_eq!(token_amount(&h, &custody), 50_000_000);
+
+    // Staker loses a round → 10% slash (50 → 45 USDC ledger stake).
+    let qid = [9u8; 32];
+    h.open_request(qid, ConsensusMode::Hash, 2);
+    h.submit(qid, o2.pubkey(), s2, vec![1; 32]).unwrap();
+    // Need a majority: register a third honest seller.
+    let (o3, s3) = h.register_seller("honest-2");
+    h.submit(qid, o3.pubkey(), s3, vec![1; 32]).unwrap();
+    // (k=2 request is full; staker lies on a fresh k=3 round instead)
+    let qid2 = [10u8; 32];
+    h.open_request(qid2, ConsensusMode::Hash, 3);
+    h.submit(qid2, o2.pubkey(), s2, vec![1; 32]).unwrap();
+    h.submit(qid2, o3.pubkey(), s3, vec![1; 32]).unwrap();
+    h.submit(qid2, o1.pubkey(), s1, vec![2; 32]).unwrap(); // staker lies
+    h.finalize(qid2, &[s2, s3, s1]);
+
+    assert_eq!(h.get_seller(s1).stake, 45_000_000, "10% slashed");
+
+    // Withdraw ledger stake (45) succeeds; withdrawing more fails.
+    let wd = |amount: u64, h: &Harness| {
+        h.ix(
+            veritas::instruction::WithdrawStake { amount }.data(),
+            veritas::accounts::WithdrawStake {
+                owner: o1.pubkey(),
+                seller: s1,
+                config: h.config,
+                owner_token: owner_ata,
+                custody,
+                token_program: anchor_spl::token::ID,
+            }
+            .to_account_metas(None),
+        )
+    };
+    let too_much = wd(50_000_000, &h);
+    assert!(h.send(&[too_much], &[&o1]).is_err(), "cannot withdraw slashed funds");
+    let ok = wd(45_000_000, &h);
+    h.send(&[ok], &[&o1]).unwrap();
+    assert_eq!(h.get_seller(s1).stake, 0);
+
+    // 5 USDC of slashed funds remain in custody = protocol treasury.
+    assert_eq!(token_amount(&h, &custody), 5_000_000);
 }
 
 #[test]

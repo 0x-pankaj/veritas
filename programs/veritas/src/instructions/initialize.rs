@@ -20,12 +20,14 @@ pub struct Initialize<'info> {
 pub fn handle_initialize(
     ctx: Context<Initialize>,
     coordinator: Pubkey,
+    stake_mint: Pubkey,
     fee_bps: u16,
     tolerance_bps: u16,
 ) -> Result<()> {
     let config = &mut ctx.accounts.config;
     config.admin = ctx.accounts.payer.key();
     config.coordinator = coordinator;
+    config.stake_mint = stake_mint;
     config.fee_bps = fee_bps;
     config.tolerance_bps = tolerance_bps;
     config.bump = ctx.bumps.config;

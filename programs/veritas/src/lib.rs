@@ -19,14 +19,29 @@ pub mod veritas {
     pub fn initialize(
         ctx: Context<Initialize>,
         coordinator: Pubkey,
+        stake_mint: Pubkey,
         fee_bps: u16,
         tolerance_bps: u16,
     ) -> Result<()> {
-        instructions::initialize::handle_initialize(ctx, coordinator, fee_bps, tolerance_bps)
+        instructions::initialize::handle_initialize(
+            ctx,
+            coordinator,
+            stake_mint,
+            fee_bps,
+            tolerance_bps,
+        )
     }
 
     pub fn register_seller(ctx: Context<RegisterSeller>, name: String) -> Result<()> {
         instructions::register_seller::handle_register_seller(ctx, name)
+    }
+
+    pub fn add_stake(ctx: Context<AddStake>, amount: u64) -> Result<()> {
+        instructions::stake::handle_add_stake(ctx, amount)
+    }
+
+    pub fn withdraw_stake(ctx: Context<WithdrawStake>, amount: u64) -> Result<()> {
+        instructions::stake::handle_withdraw_stake(ctx, amount)
     }
 
     pub fn open_request(

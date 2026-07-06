@@ -16,7 +16,12 @@ pub const REPUTATION_MAX: u32 = 1000;
 pub const REPUTATION_WIN: u32 = 10;
 pub const REPUTATION_LOSS: u32 = 50;
 
+/// Fraction of an outlier's stake slashed per lost round (basis points).
+/// Slashed funds remain in custody as protocol treasury.
+pub const SLASH_BPS: u64 = 1_000; // 10%
+
 /// PDA seeds.
 pub const CONFIG_SEED: &[u8] = b"config";
 pub const SELLER_SEED: &[u8] = b"seller";
 pub const REQUEST_SEED: &[u8] = b"vreq";
+pub const STAKE_SEED: &[u8] = b"stake";

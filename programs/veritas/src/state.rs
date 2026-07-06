@@ -9,6 +9,8 @@ pub struct Config {
     pub admin: Pubkey,
     /// Only this key may open/submit/finalize/close verification requests.
     pub coordinator: Pubkey,
+    /// Mint sellers stake with (USDC). Custody token accounts use this mint.
+    pub stake_mint: Pubkey,
     /// Veritas fee in basis points (informational on-chain; enforced off-chain).
     pub fee_bps: u16,
     /// Numeric consensus tolerance in basis points relative to the median.

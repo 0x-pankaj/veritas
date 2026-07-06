@@ -62,6 +62,10 @@ pub fn handle_finalize_consensus(
         } else {
             seller.outliers = seller.outliers.saturating_add(1);
             seller.reputation = seller.reputation.saturating_sub(REPUTATION_LOSS);
+            // Slash a fraction of ledger stake; funds remain in custody as
+            // protocol treasury (custody balance − ledger stake).
+            let slash = seller.stake.saturating_mul(crate::constants::SLASH_BPS) / 10_000;
+            seller.stake = seller.stake.saturating_sub(slash);
         }
 
         let mut cursor = std::io::Cursor::new(&mut data[..]);

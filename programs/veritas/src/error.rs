@@ -26,4 +26,14 @@ pub enum VeritasError {
     BadRemainingAccounts,
     #[msg("Name exceeds MAX_NAME_LEN")]
     NameTooLong,
+    #[msg("Token account mint does not match config.stake_mint")]
+    WrongStakeMint,
+    #[msg("Token account is not owned by the signer")]
+    WrongTokenOwner,
+    #[msg("Amount must be greater than zero")]
+    ZeroAmount,
+    #[msg("Withdrawal exceeds ledger stake")]
+    InsufficientStake,
+    #[msg("Arithmetic overflow")]
+    Overflow,
 }
