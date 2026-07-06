@@ -1,0 +1,34 @@
+# deps
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+.next/
+.turbo/
+target/
+**/*.tsbuildinfo
+
+# anchor / solana
+.anchor/
+test-ledger/
+
+# env & secrets — never commit
+.env
+.env.*
+!.env.example
+*.keypair.json
+keypair.json
+
+# db
+*.sqlite
+
+# misc
+.DS_Store
+coverage/
+
+# private strategy/planning docs — never publish to GitHub
+veritas-project.html
+PRODUCT.md
+BUILD_PLAN.md
+PROGRESS.md
