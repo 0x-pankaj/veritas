@@ -1,0 +1,1074 @@
+{
+  "address": "CiGK2btZHdeW1U327ZLDhTQhDhP9TB6U16oG4a21YTUG",
+  "metadata": {
+    "name": "veritas",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Veritas — consensus verification, seller registry, and reputation for the agent economy"
+  },
+  "instructions": [
+    {
+      "name": "add_stake",
+      "discriminator": [
+        58,
+        135,
+        189,
+        105,
+        160,
+        120,
+        165,
+        224
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "seller",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  108,
+                  108,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "stake_mint"
+        },
+        {
+          "name": "owner_token",
+          "docs": [
+            "Seller's own token account to stake from."
+          ],
+          "writable": true
+        },
+        {
+          "name": "custody",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "close_request",
+      "discriminator": [
+        170,
+        46,
+        165,
+        120,
+        223,
+        102,
+        115,
+        2
+      ],
+      "accounts": [
+        {
+          "name": "coordinator",
+          "docs": [
+            "Rent is reclaimed to the coordinator (it paid to open the request)."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "request",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  114,
+                  101,
+                  113
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "query_id"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "query_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "finalize_consensus",
+      "discriminator": [
+        158,
+        21,
+        141,
+        117,
+        251,
+        129,
+        243,
+        22
+      ],
+      "accounts": [
+        {
+          "name": "coordinator",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "request",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  114,
+                  101,
+                  113
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "query_id"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "query_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "coordinator",
+          "type": "pubkey"
+        },
+        {
+          "name": "stake_mint",
+          "type": "pubkey"
+        },
+        {
+          "name": "fee_bps",
+          "type": "u16"
+        },
+        {
+          "name": "tolerance_bps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "open_request",
+      "discriminator": [
+        82,
+        209,
+        193,
+        32,
+        229,
+        80,
+        228,
+        197
+      ],
+      "accounts": [
+        {
+          "name": "coordinator",
+          "docs": [
+            "Only the coordinator authority may open requests."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "request",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  114,
+                  101,
+                  113
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "query_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "query_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "buyer_ref",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "mode",
+          "type": {
+            "defined": {
+              "name": "ConsensusMode"
+            }
+          }
+        },
+        {
+          "name": "k",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "register_seller",
+      "discriminator": [
+        9,
+        50,
+        144,
+        162,
+        206,
+        176,
+        154,
+        111
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "docs": [
+            "The seller registering itself — pays rent and owns the account."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "seller",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  108,
+                  108,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "submit_response",
+      "discriminator": [
+        85,
+        190,
+        208,
+        119,
+        243,
+        52,
+        133,
+        90
+      ],
+      "accounts": [
+        {
+          "name": "coordinator",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "request",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  114,
+                  101,
+                  113
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "query_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "seller",
+          "docs": [
+            "The responding seller must be registered; existence is the check."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  108,
+                  108,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "seller_owner"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "query_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "seller_owner",
+          "type": "pubkey"
+        },
+        {
+          "name": "value",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
+      "name": "withdraw_stake",
+      "discriminator": [
+        153,
+        8,
+        22,
+        138,
+        105,
+        176,
+        87,
+        66
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "seller",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  108,
+                  108,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner_token",
+          "writable": true
+        },
+        {
+          "name": "custody",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Config",
+      "discriminator": [
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
+    },
+    {
+      "name": "SellerAccount",
+      "discriminator": [
+        165,
+        133,
+        123,
+        22,
+        51,
+        242,
+        209,
+        52
+      ]
+    },
+    {
+      "name": "VerificationRequest",
+      "discriminator": [
+        66,
+        147,
+        154,
+        149,
+        184,
+        5,
+        129,
+        4
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "Signer is not the coordinator authority"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidK",
+      "msg": "k must be between MIN_RESPONSES and MAX_K"
+    },
+    {
+      "code": 6002,
+      "name": "RequestNotOpen",
+      "msg": "Request is not open"
+    },
+    {
+      "code": 6003,
+      "name": "RequestNotClosed",
+      "msg": "Request is not settled or failed"
+    },
+    {
+      "code": 6004,
+      "name": "DuplicateSeller",
+      "msg": "Seller already submitted a response for this request"
+    },
+    {
+      "code": 6005,
+      "name": "TooManyResponses",
+      "msg": "Request already has k responses"
+    },
+    {
+      "code": 6006,
+      "name": "ValueTooLarge",
+      "msg": "Response value exceeds MAX_RESPONSE_BYTES"
+    },
+    {
+      "code": 6007,
+      "name": "ValueTooSmallForNumeric",
+      "msg": "Numeric response must be at least 8 bytes (i64 LE)"
+    },
+    {
+      "code": 6008,
+      "name": "NotEnoughResponses",
+      "msg": "Fewer responses than MIN_RESPONSES; cannot finalize"
+    },
+    {
+      "code": 6009,
+      "name": "SellerMismatch",
+      "msg": "Seller account does not match the response entry"
+    },
+    {
+      "code": 6010,
+      "name": "BadRemainingAccounts",
+      "msg": "remaining_accounts must contain each responding seller, in order"
+    },
+    {
+      "code": 6011,
+      "name": "NameTooLong",
+      "msg": "Name exceeds MAX_NAME_LEN"
+    },
+    {
+      "code": 6012,
+      "name": "WrongStakeMint",
+      "msg": "Token account mint does not match config.stake_mint"
+    },
+    {
+      "code": 6013,
+      "name": "WrongTokenOwner",
+      "msg": "Token account is not owned by the signer"
+    },
+    {
+      "code": 6014,
+      "name": "ZeroAmount",
+      "msg": "Amount must be greater than zero"
+    },
+    {
+      "code": 6015,
+      "name": "InsufficientStake",
+      "msg": "Withdrawal exceeds ledger stake"
+    },
+    {
+      "code": 6016,
+      "name": "Overflow",
+      "msg": "Arithmetic overflow"
+    }
+  ],
+  "types": [
+    {
+      "name": "Config",
+      "docs": [
+        "Global config singleton. Seeds: [\"config\"]."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "coordinator",
+            "docs": [
+              "Only this key may open/submit/finalize/close verification requests."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "stake_mint",
+            "docs": [
+              "Mint sellers stake with (USDC). Custody token accounts use this mint."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_bps",
+            "docs": [
+              "Veritas fee in basis points (informational on-chain; enforced off-chain)."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "tolerance_bps",
+            "docs": [
+              "Numeric consensus tolerance in basis points relative to the median."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConsensusMode",
+      "docs": [
+        "How responses are compared in `finalize_consensus`."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Numeric"
+          },
+          {
+            "name": "Hash"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RequestStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Open"
+          },
+          {
+            "name": "Settled"
+          },
+          {
+            "name": "Failed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ResponseEntry",
+      "docs": [
+        "One seller's committed response inside a request."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "len",
+            "type": "u8"
+          },
+          {
+            "name": "value",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SellerAccount",
+      "docs": [
+        "One registered data seller. Seeds: [\"seller\", owner]."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "reputation",
+            "docs": [
+              "0..=1000, starts at REPUTATION_START."
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "served",
+            "type": "u32"
+          },
+          {
+            "name": "matched",
+            "type": "u32"
+          },
+          {
+            "name": "outliers",
+            "type": "u32"
+          },
+          {
+            "name": "stake",
+            "docs": [
+              "USDC stake in custody (base units). Custody transfer lands in P1-T2b."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "SellerStatus"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SellerStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Suspended"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VerificationRequest",
+      "docs": [
+        "One consensus purchase round. Seeds: [\"vreq\", query_id]."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "query_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "buyer_ref",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "mode",
+            "type": {
+              "defined": {
+                "name": "ConsensusMode"
+              }
+            }
+          },
+          {
+            "name": "k",
+            "type": "u8"
+          },
+          {
+            "name": "responses",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ResponseEntry"
+                }
+              }
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "RequestStatus"
+              }
+            }
+          },
+          {
+            "name": "verdict_len",
+            "docs": [
+              "Consensus truth (numeric i64 LE, or the majority hash). Empty until settled."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "verdict",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          },
+          {
+            "name": "winners_bitmap",
+            "docs": [
+              "Bit i set = responses[i].seller matched consensus."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "created_slot",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}

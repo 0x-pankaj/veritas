@@ -21,6 +21,8 @@ export const PROTOCOL = {
 export const TESTNET = {
   solana: {
     rpc: "https://api.devnet.solana.com",
+    /** The Veritas program, deployed to Devnet (P1-T6). */
+    veritasProgram: "CiGK2btZHdeW1U327ZLDhTQhDhP9TB6U16oG4a21YTUG",
     /** Circle Gateway Wallet program (Devnet) — NOT the Veritas program. */
     gatewayWalletProgram: "GATEwdfmYNELfp5wDmmR6noSr2vHnAfBPMm2PvCzX5vu",
     usdcMint: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
