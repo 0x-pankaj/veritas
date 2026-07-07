@@ -5,6 +5,7 @@ config({ path: resolve(import.meta.dirname, "../../../.env") });
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { testClient } from "hono/testing";
 import { buildApp } from "./app.js";
+import { makeTestDeps } from "./test-helpers.js";
 import { closeDb, getDb } from "./db.js";
 import { pickSellers } from "./services/registry.js";
 
@@ -23,7 +24,7 @@ const mkSeller = (i: number) => ({
 });
 
 describe.skipIf(!process.env.DATABASE_URL)("registry + discovery", () => {
-  const client = testClient(buildApp());
+  const client = testClient(buildApp(makeTestDeps()));
   const created: string[] = [];
 
   beforeAll(async () => {

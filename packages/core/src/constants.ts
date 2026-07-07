@@ -29,6 +29,8 @@ export const TESTNET = {
   },
   arc: {
     chainName: "arcTestnet",
+    /** CAIP-2 network id used by x402/Gateway (Arc Testnet). */
+    caip2: "eip155:5042002",
     gatewayDomain: 26,
     gatewayWallet: "0x0077777d7EBA4688BDeF3E311b846F25870A19B9",
     usdc: "0x3600000000000000000000000000000000000000",

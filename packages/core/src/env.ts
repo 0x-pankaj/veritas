@@ -20,6 +20,11 @@ export const envSchema = z.object({
   COORDINATOR_API_KEY: z.string().min(16, "min 16 chars"),
   VERITAS_FACILITATOR_URL: z.string().url(),
   VERITAS_FEE_BPS: z.coerce.number().int().min(0).max(10_000).default(200),
+  /** Gateway address Veritas fee auths pay to. */
+  VERITAS_FEE_ADDRESS: z
+    .string()
+    .regex(/^0x[0-9a-fA-F]{40}$/)
+    .default("0x000000000000000000000000000000000000dEaD"),
   DATABASE_URL: z.string().url(),
 });
 

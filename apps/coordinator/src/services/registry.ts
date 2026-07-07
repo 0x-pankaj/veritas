@@ -36,8 +36,8 @@ export async function registerSeller(
 }
 
 export interface DiscoveryFilter {
-  category?: string;
-  symbol?: string;
+  category?: string | undefined;
+  symbol?: string | undefined;
 }
 
 /** Discovery: active sellers matching category/coverage, best reputation first. */
