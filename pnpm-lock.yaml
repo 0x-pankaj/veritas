@@ -129,6 +129,43 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@26.1.0)(jiti@2.7.0)(tsx@4.23.0)
 
+  packages/seller-sdk:
+    dependencies:
+      '@solana/web3.js':
+        specifier: ^1.98.0
+        version: 1.98.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      '@veritas/core':
+        specifier: workspace:*
+        version: link:../core
+      '@veritas/onchain':
+        specifier: workspace:*
+        version: link:../onchain
+      hono:
+        specifier: ^4.7.0
+        version: 4.12.28
+    devDependencies:
+      '@hono/node-server':
+        specifier: ^1.14.0
+        version: 1.19.14(hono@4.12.28)
+      '@types/node':
+        specifier: ^26.1.0
+        version: 26.1.0
+      '@types/pg':
+        specifier: ^8.20.0
+        version: 8.20.0
+      '@veritas/coordinator':
+        specifier: workspace:*
+        version: link:../../apps/coordinator
+      pg:
+        specifier: ^8.22.0
+        version: 8.22.0
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@26.1.0)(jiti@2.7.0)(tsx@4.23.0)
+
 packages:
 
   '@adraffy/ens-normalize@1.11.1':

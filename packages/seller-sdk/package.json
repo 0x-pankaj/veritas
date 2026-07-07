@@ -1,0 +1,34 @@
+{
+  "name": "@veritas/seller",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.98.0",
+    "@veritas/core": "workspace:*",
+    "@veritas/onchain": "workspace:*",
+    "hono": "^4.7.0"
+  },
+  "devDependencies": {
+    "@hono/node-server": "^1.14.0",
+    "@types/node": "^26.1.0",
+    "@types/pg": "^8.20.0",
+    "@veritas/coordinator": "workspace:*",
+    "pg": "^8.22.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}
