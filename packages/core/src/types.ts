@@ -93,6 +93,21 @@ export interface BuyResult {
   finalCost: UsdcAmount;
 }
 
+/** Coordinator → seller fan-out wire contract (used by the seller SDK too). */
+export interface FanoutRequest {
+  queryId: string;
+  category: Category;
+  symbol: string;
+}
+
+/** Seller's answer. `value` is the canonical comparable (decimal string for
+ *  numeric consensus; hex hash for content-addressed). `payload` is the full
+ *  response served to the buyer. */
+export interface FanoutResponse {
+  value: string;
+  payload?: unknown;
+}
+
 export interface VerificationRequestDTO {
   queryId: string;
   mode: Mode;
