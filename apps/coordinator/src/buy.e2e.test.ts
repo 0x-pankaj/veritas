@@ -6,17 +6,19 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { serve, type ServerType } from "@hono/node-server";
 import { Hono } from "hono";
 import { testClient } from "hono/testing";
-import {
-  Connection,
-  Keypair,
-  SystemProgram,
-  Transaction,
-  sendAndConfirmTransaction,
-} from "@solana/web3.js";
+import { Connection, Keypair } from "@solana/web3.js";
 import { VeritasClient } from "@veritas/onchain";
+import { inArray } from "drizzle-orm";
 import { buildApp } from "./app.js";
 import { closeDb, getDb } from "./db.js";
-import { makeTestDeps, fakeAuth, TEST_API_KEY, TEST_FEE_ADDRESS } from "./test-helpers.js";
+import { responses, sellers as sellersTable, settlements } from "./db/schema.js";
+import {
+  makeTestDeps,
+  fakeAuth,
+  fundAll,
+  TEST_API_KEY,
+  TEST_FEE_ADDRESS,
+} from "./test-helpers.js";
 
 const DEVNET = process.env.DEVNET_KEYPAIR;
 const gated = !DEVNET || !process.env.DATABASE_URL;
@@ -65,25 +67,19 @@ describe.skipIf(gated)("PRODUCT API e2e: /quote → /buy (devnet + mock settle)"
     );
     veritasClient = new VeritasClient({ connection, payer });
 
-    const fund = new Transaction();
-    for (const o of owners) {
-      fund.add(
-        SystemProgram.transfer({
-          fromPubkey: payer.publicKey,
-          toPubkey: o.publicKey,
-          lamports: 5_000_000,
-        }),
-      );
-    }
-    await sendAndConfirmTransaction(connection, fund, [payer], {
-      commitment: "confirmed",
-    });
+    await fundAll(
+      connection,
+      payer,
+      owners.map((o) => o.publicKey),
+      5_000_000,
+    );
 
     const db = getDb();
     for (const [i, o] of owners.entries()) {
       await veritasClient.registerSeller(`${run}-${i}`, o);
-      const s = await db.seller.create({
-        data: {
+      const [s] = await db
+        .insert(sellersTable)
+        .values({
           solanaPubkey: o.publicKey.toBase58(),
           payoutAddress: `0x${(i + 3).toString().repeat(40).slice(0, 40)}`,
           name: `${run}-${i}`,
@@ -93,18 +89,18 @@ describe.skipIf(gated)("PRODUCT API e2e: /quote → /buy (devnet + mock settle)"
           coverage: [`${run}/USD`], // unique symbol so only OUR sellers match
           schemaDesc: "{symbol, price, ts}",
           freshnessSec: 5,
-        },
-      });
-      sellerIds.push(s.id);
+        })
+        .returning();
+      sellerIds.push(s!.id);
     }
   }, 120_000);
 
   afterAll(async () => {
     for (const s of servers) s.close();
     const db = getDb();
-    await db.settlement.deleteMany({ where: { sellerId: { in: sellerIds } } });
-    await db.response.deleteMany({ where: { sellerId: { in: sellerIds } } });
-    await db.seller.deleteMany({ where: { id: { in: sellerIds } } });
+    await db.delete(settlements).where(inArray(settlements.sellerId, sellerIds));
+    await db.delete(responses).where(inArray(responses.sellerId, sellerIds));
+    await db.delete(sellersTable).where(inArray(sellersTable.id, sellerIds));
     await closeDb();
   });
 

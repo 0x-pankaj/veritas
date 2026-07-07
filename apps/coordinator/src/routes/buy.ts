@@ -2,8 +2,10 @@ import { randomBytes } from "node:crypto";
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
+import { eq } from "drizzle-orm";
 import { CATEGORIES, PROTOCOL, TESTNET, type Eip3009Authorization } from "@veritas/core";
 import { getDb } from "../db.js";
+import { queries, responses, settlements } from "../db/schema.js";
 import { pickSellers } from "../services/registry.js";
 import { fanout, quorumMet } from "../services/fanout.js";
 import { runNumericRound } from "../services/verifier.js";
@@ -133,15 +135,13 @@ export function buildBuyRoutes(deps: BuyDeps) {
       const db = getDb();
       const queryIdHex = randomBytes(32).toString("hex");
       const buyer = items[0]!.authorization.from;
-      await db.query.create({
-        data: {
-          id: queryIdHex,
-          buyer,
-          mode: "CONSENSUS",
-          k: quote.k,
-          feeAmount: quote.fee,
-          status: "FANOUT",
-        },
+      await db.insert(queries).values({
+        id: queryIdHex,
+        buyer,
+        mode: "CONSENSUS",
+        k: quote.k,
+        feeAmount: quote.fee,
+        status: "FANOUT",
       });
 
       // Fan out — sellers verify our credential; they never see each other.
@@ -151,23 +151,21 @@ export function buildBuyRoutes(deps: BuyDeps) {
         { coordinatorApiKey: deps.coordinatorApiKey },
       );
       if (!quorumMet(results.length, quote.k)) {
-        await db.query.update({
-          where: { id: queryIdHex },
-          data: { status: "FAILED" },
-        });
+        await db
+          .update(queries)
+          .set({ status: "FAILED" })
+          .where(eq(queries.id, queryIdHex));
         // Nothing was redeemed — the agent owes 0 (pay-after-verdict).
         return c.json({ error: "quorum not met; nothing charged" as const }, 502);
       }
-      for (const r of results) {
-        await db.response.create({
-          data: {
-            queryId: queryIdHex,
-            sellerId: r.seller.id,
-            valueOrHash: r.value,
-            latencyMs: r.latencyMs,
-          },
-        });
-      }
+      await db.insert(responses).values(
+        results.map((r) => ({
+          queryId: queryIdHex,
+          sellerId: r.seller.id,
+          valueOrHash: r.value,
+          latencyMs: r.latencyMs,
+        })),
+      );
 
       // Prove on Solana (the agent's critical path ends when we respond).
       const verdict = await runNumericRound({
@@ -197,20 +195,18 @@ export function buildBuyRoutes(deps: BuyDeps) {
               (s) => s.payoutAddress.toLowerCase() === item.payTo.toLowerCase(),
             );
             if (!seller) continue; // fee item
-            await db.settlement.create({
-              data: {
-                queryId: queryIdHex,
-                sellerId: seller.id,
-                amount: item.amount,
-                gatewayTx: receipt.txId || null,
-                status: receipt.status === "PENDING" ? "PENDING" : "FAILED",
-              },
+            await db.insert(settlements).values({
+              queryId: queryIdHex,
+              sellerId: seller.id,
+              amount: item.amount,
+              gatewayTx: receipt.txId || null,
+              status: receipt.status === "PENDING" ? "PENDING" : "FAILED",
             });
           }
-          await db.query.update({
-            where: { id: queryIdHex },
-            data: { status: "DONE", cost: finalCost },
-          });
+          await db
+            .update(queries)
+            .set({ status: "DONE", cost: finalCost })
+            .where(eq(queries.id, queryIdHex));
         })
         .catch((err) => console.error("settlement failed", queryIdHex, err));
 
@@ -233,23 +229,25 @@ export function buildBuyRoutes(deps: BuyDeps) {
 
     .get("/verify/:queryId", async (c) => {
       const queryId = c.req.param("queryId");
-      const q = await getDb().query.findUnique({
-        where: { id: queryId },
-        include: { responses: true, settlements: true },
-      });
+      const db = getDb();
+      const [q] = await db.select().from(queries).where(eq(queries.id, queryId));
       if (!q) return c.json({ error: "unknown query" as const }, 404);
+      const [resRows, setRows] = await Promise.all([
+        db.select().from(responses).where(eq(responses.queryId, queryId)),
+        db.select().from(settlements).where(eq(settlements.queryId, queryId)),
+      ]);
       return c.json({
         queryId: q.id,
         status: q.status,
         truth: q.truth,
         solanaTx: q.solanaTx,
         requestPda: q.solanaReqPda,
-        responses: q.responses.map((r) => ({
+        responses: resRows.map((r) => ({
           sellerId: r.sellerId,
           matched: r.matched,
           latencyMs: r.latencyMs,
         })),
-        settlements: q.settlements.map((s) => ({
+        settlements: setRows.map((s) => ({
           sellerId: s.sellerId,
           amount: s.amount,
           status: s.status,

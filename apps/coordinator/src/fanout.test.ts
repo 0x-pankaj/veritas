@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { serve, type ServerType } from "@hono/node-server";
 import { Hono } from "hono";
 import { fanout, quorumMet } from "./services/fanout.js";
-import type { Seller } from "./generated/prisma/client.js";
+import type { Seller } from "./db/schema.js";
 
 const API_KEY = "test-coordinator-key-0123456789";
 

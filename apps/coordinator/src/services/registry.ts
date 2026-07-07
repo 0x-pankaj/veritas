@@ -1,4 +1,6 @@
-import type { PrismaClient, Seller } from "../generated/prisma/client.js";
+import { and, arrayContains, desc, eq } from "drizzle-orm";
+import type { Db } from "../db.js";
+import { sellers, type Seller } from "../db/schema.js";
 
 export interface RegisterSellerInput {
   solanaPubkey: string;
@@ -15,24 +17,28 @@ export interface RegisterSellerInput {
 
 /** Upsert a seller registration (idempotent on solanaPubkey). */
 export async function registerSeller(
-  db: PrismaClient,
+  db: Db,
   input: RegisterSellerInput,
 ): Promise<Seller> {
-  return db.seller.upsert({
-    where: { solanaPubkey: input.solanaPubkey },
-    create: input,
-    update: {
-      payoutAddress: input.payoutAddress,
-      name: input.name,
-      endpoint: input.endpoint,
-      price: input.price,
-      mode: input.mode,
-      category: input.category,
-      coverage: input.coverage,
-      schemaDesc: input.schemaDesc,
-      freshnessSec: input.freshnessSec,
-    },
-  });
+  const [row] = await db
+    .insert(sellers)
+    .values(input)
+    .onConflictDoUpdate({
+      target: sellers.solanaPubkey,
+      set: {
+        payoutAddress: input.payoutAddress,
+        name: input.name,
+        endpoint: input.endpoint,
+        price: input.price,
+        mode: input.mode,
+        category: input.category,
+        coverage: input.coverage,
+        schemaDesc: input.schemaDesc,
+        freshnessSec: input.freshnessSec,
+      },
+    })
+    .returning();
+  return row!;
 }
 
 export interface DiscoveryFilter {
@@ -41,18 +47,18 @@ export interface DiscoveryFilter {
 }
 
 /** Discovery: active sellers matching category/coverage, best reputation first. */
-export async function listSellers(
-  db: PrismaClient,
-  filter: DiscoveryFilter,
-): Promise<Seller[]> {
-  return db.seller.findMany({
-    where: {
-      status: "ACTIVE",
-      ...(filter.category ? { category: filter.category } : {}),
-      ...(filter.symbol ? { coverage: { has: filter.symbol } } : {}),
-    },
-    orderBy: [{ reputation: "desc" }, { matched: "desc" }],
-  });
+export async function listSellers(db: Db, filter: DiscoveryFilter): Promise<Seller[]> {
+  return db
+    .select()
+    .from(sellers)
+    .where(
+      and(
+        eq(sellers.status, "ACTIVE"),
+        filter.category ? eq(sellers.category, filter.category) : undefined,
+        filter.symbol ? arrayContains(sellers.coverage, [filter.symbol]) : undefined,
+      ),
+    )
+    .orderBy(desc(sellers.reputation), desc(sellers.matched));
 }
 
 /**
@@ -60,7 +66,7 @@ export async function listSellers(
  * covering the symbol. Simple matching — no semantic search (PRODUCT §7.3).
  */
 export async function pickSellers(
-  db: PrismaClient,
+  db: Db,
   category: string,
   symbol: string,
   k: number,

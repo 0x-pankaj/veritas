@@ -1,7 +1,9 @@
 import { decimalToMicro, microToDecimal } from "@veritas/core";
 import { VeritasClient, encodeNumeric } from "@veritas/onchain";
 import { PublicKey } from "@solana/web3.js";
-import type { PrismaClient } from "../generated/prisma/client.js";
+import { and, eq } from "drizzle-orm";
+import type { Db } from "../db.js";
+import { queries, responses, sellers } from "../db/schema.js";
 import type { FanoutResult } from "./fanout.js";
 
 export interface RoundVerdict {
@@ -28,7 +30,7 @@ export function queryIdBytes(queryIdHex: string): Uint8Array {
  */
 export async function runNumericRound(args: {
   client: VeritasClient;
-  db: PrismaClient;
+  db: Db;
   queryIdHex: string;
   buyerRef?: Uint8Array;
   results: FanoutResult[];
@@ -77,32 +79,37 @@ export async function runNumericRound(args: {
 
   // ── Mirror to Postgres ────────────────────────────────────────────
   const requestPda = client.requestAddress(qid).toBase58();
-  await db.query.update({
-    where: { id: args.queryIdHex },
-    data: {
+  await db
+    .update(queries)
+    .set({
       truth,
       status: winners.length > 0 ? "SETTLED_ONCHAIN" : "FAILED",
       solanaReqPda: requestPda,
       solanaTx,
-    },
-  });
+    })
+    .where(eq(queries.id, args.queryIdHex));
   for (const r of results) {
     const matched = winners.includes(r);
-    await db.response.update({
-      where: { queryId_sellerId: { queryId: args.queryIdHex, sellerId: r.seller.id } },
-      data: { matched },
-    });
+    await db
+      .update(responses)
+      .set({ matched })
+      .where(
+        and(
+          eq(responses.queryId, args.queryIdHex),
+          eq(responses.sellerId, r.seller.id),
+        ),
+      );
     // Reputation mirror: read back the on-chain truth.
     const onchainSeller = await client.getSeller(new PublicKey(r.seller.solanaPubkey));
-    await db.seller.update({
-      where: { id: r.seller.id },
-      data: {
+    await db
+      .update(sellers)
+      .set({
         reputation: onchainSeller.reputation,
         served: onchainSeller.served,
         matched: onchainSeller.matched,
         outliers: onchainSeller.outliers,
-      },
-    });
+      })
+      .where(eq(sellers.id, r.seller.id));
   }
 
   return { queryId: args.queryIdHex, truth, winners, outliers, solanaTx, requestPda };

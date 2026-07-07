@@ -4,9 +4,11 @@ config({ path: resolve(import.meta.dirname, "../../../.env") });
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { testClient } from "hono/testing";
+import { eq, inArray } from "drizzle-orm";
 import { buildApp } from "./app.js";
 import { makeTestDeps } from "./test-helpers.js";
 import { closeDb, getDb } from "./db.js";
+import { sellers } from "./db/schema.js";
 import { pickSellers } from "./services/registry.js";
 
 const run = `disc-${Date.now()}`;
@@ -37,15 +39,15 @@ describe.skipIf(!process.env.DATABASE_URL)("registry + discovery", () => {
       created.push(body.id);
     }
     // Give seller-2 a better reputation so ranking is observable.
-    await db.seller.update({
-      where: { solanaPubkey: mkSeller(2).solanaPubkey },
-      data: { reputation: 700 },
-    });
+    await db
+      .update(sellers)
+      .set({ reputation: 700 })
+      .where(eq(sellers.solanaPubkey, mkSeller(2).solanaPubkey));
   });
 
   afterAll(async () => {
     const db = getDb();
-    await db.seller.deleteMany({ where: { id: { in: created } } });
+    await db.delete(sellers).where(inArray(sellers.id, created));
     await closeDb();
   });
 

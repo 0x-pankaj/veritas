@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Seller } from "../generated/prisma/client.js";
+import type { Seller } from "../db/schema.js";
 
 export interface StoredQuote {
   quoteId: string;

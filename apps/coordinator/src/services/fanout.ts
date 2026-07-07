@@ -1,5 +1,5 @@
 import type { FanoutRequest, FanoutResponse } from "@veritas/core";
-import type { Seller } from "../generated/prisma/client.js";
+import type { Seller } from "../db/schema.js";
 
 export interface FanoutResult {
   seller: Seller;

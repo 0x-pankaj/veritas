@@ -1,7 +1,44 @@
 import { randomBytes } from "node:crypto";
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+  sendAndConfirmTransaction,
+} from "@solana/web3.js";
 import type { Eip3009Authorization } from "@veritas/core";
 import type { BuyDeps } from "./app.js";
 import { MockSettlementProvider } from "./services/settlement.js";
+
+/** Fund test accounts with retries — public Devnet drops transactions. */
+export async function fundAll(
+  connection: Connection,
+  payer: Keypair,
+  recipients: PublicKey[],
+  lamports: number,
+  attempts = 3,
+): Promise<void> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const tx = new Transaction();
+      for (const to of recipients) {
+        tx.add(
+          SystemProgram.transfer({ fromPubkey: payer.publicKey, toPubkey: to, lamports }),
+        );
+      }
+      await sendAndConfirmTransaction(connection, tx, [payer], {
+        commitment: "confirmed",
+      });
+      return;
+    } catch (err) {
+      lastErr = err;
+      await new Promise((r) => setTimeout(r, 2_000 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
 
 export const TEST_API_KEY = "test-coordinator-key-0123456789";
 export const TEST_FEE_ADDRESS = "0x00000000000000000000000000000000000000Fe";
