@@ -1,8 +1,9 @@
 import { randomBytes } from "node:crypto";
-import {
+import type {
   Connection,
   Keypair,
-  PublicKey,
+  PublicKey} from "@solana/web3.js";
+import {
   SystemProgram,
   Transaction,
   sendAndConfirmTransaction,

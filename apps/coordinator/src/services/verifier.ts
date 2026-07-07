@@ -1,5 +1,6 @@
 import { decimalToMicro, microToDecimal } from "@veritas/core";
-import { VeritasClient, encodeNumeric } from "@veritas/onchain";
+import type { VeritasClient} from "@veritas/onchain";
+import { encodeNumeric } from "@veritas/onchain";
 import { PublicKey } from "@solana/web3.js";
 import { and, eq } from "drizzle-orm";
 import type { Db } from "../db.js";

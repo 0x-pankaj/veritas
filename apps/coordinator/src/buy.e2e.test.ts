@@ -12,13 +12,7 @@ import { inArray } from "drizzle-orm";
 import { buildApp } from "./app.js";
 import { closeDb, getDb } from "./db.js";
 import { responses, sellers as sellersTable, settlements } from "./db/schema.js";
-import {
-  makeTestDeps,
-  fakeAuth,
-  fundAll,
-  TEST_API_KEY,
-  TEST_FEE_ADDRESS,
-} from "./test-helpers.js";
+import { makeTestDeps, fakeAuth, fundAll, TEST_API_KEY } from "./test-helpers.js";
 
 const DEVNET = process.env.DEVNET_KEYPAIR;
 const gated = !DEVNET || !process.env.DATABASE_URL;

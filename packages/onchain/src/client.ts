@@ -1,8 +1,9 @@
 import * as anchor from "@coral-xyz/anchor";
-import {
+import type {
   Connection,
   Keypair,
-  PublicKey,
+  PublicKey} from "@solana/web3.js";
+import {
   type TransactionSignature,
 } from "@solana/web3.js";
 import type { Veritas } from "./veritas-types.js";
