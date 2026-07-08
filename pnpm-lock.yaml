@@ -37,7 +37,7 @@ importers:
     dependencies:
       '@circle-fin/x402-batching':
         specifier: ^3.2.0
-        version: 3.2.0(@x402/core@2.17.0)(viem@2.54.6(bufferutil@4.1.0)(typescript@5.9.3)(zod@3.25.76))
+        version: 3.2.0(@x402/core@2.17.0)(viem@2.54.6(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76))
       '@hono/node-server':
         specifier: ^1.14.0
         version: 1.19.14(hono@4.12.28)
@@ -81,6 +81,52 @@ importers:
       tsx:
         specifier: ^4.23.0
         version: 4.23.0
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@26.1.0)(jiti@2.7.0)(tsx@4.23.0)
+
+  packages/agent-sdk:
+    dependencies:
+      '@veritas/core':
+        specifier: workspace:*
+        version: link:../core
+      hono:
+        specifier: ^4.7.0
+        version: 4.12.28
+    devDependencies:
+      '@hono/node-server':
+        specifier: ^1.14.0
+        version: 1.19.14(hono@4.12.28)
+      '@solana/web3.js':
+        specifier: ^1.98.0
+        version: 1.98.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      '@types/express':
+        specifier: ^5.0.0
+        version: 5.0.6
+      '@types/node':
+        specifier: ^26.1.0
+        version: 26.1.0
+      '@types/pg':
+        specifier: ^8.20.0
+        version: 8.20.0
+      '@veritas/coordinator':
+        specifier: workspace:*
+        version: link:../../apps/coordinator
+      '@veritas/onchain':
+        specifier: workspace:*
+        version: link:../onchain
+      '@veritas/seller':
+        specifier: workspace:*
+        version: link:../seller-sdk
+      express:
+        specifier: ^5.0.0
+        version: 5.2.1
+      pg:
+        specifier: ^8.22.0
+        version: 8.22.0
       typescript:
         specifier: ^5.8.0
         version: 5.9.3
@@ -2797,10 +2843,10 @@ snapshots:
 
   '@babel/runtime@7.29.7': {}
 
-  '@circle-fin/x402-batching@3.2.0(@x402/core@2.17.0)(viem@2.54.6(bufferutil@4.1.0)(typescript@5.9.3)(zod@3.25.76))':
+  '@circle-fin/x402-batching@3.2.0(@x402/core@2.17.0)(viem@2.54.6(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76))':
     dependencies:
       '@x402/core': 2.17.0
-      viem: 2.54.6(bufferutil@4.1.0)(typescript@5.9.3)(zod@3.25.76)
+      viem: 2.54.6(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76)
 
   '@coral-xyz/anchor-errors@0.31.1': {}
 
@@ -4461,7 +4507,7 @@ snapshots:
     dependencies:
       ws: 7.5.11(bufferutil@4.1.0)(utf-8-validate@6.0.6)
 
-  isows@1.0.7(ws@8.21.0(bufferutil@4.1.0)):
+  isows@1.0.7(ws@8.21.0(bufferutil@4.1.0)(utf-8-validate@6.0.6)):
     dependencies:
       ws: 8.21.0(bufferutil@4.1.0)(utf-8-validate@6.0.6)
 
@@ -5130,14 +5176,14 @@ snapshots:
 
   vary@1.1.2: {}
 
-  viem@2.54.6(bufferutil@4.1.0)(typescript@5.9.3)(zod@3.25.76):
+  viem@2.54.6(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76):
     dependencies:
       '@noble/curves': 1.9.1
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
       abitype: 1.2.3(typescript@5.9.3)(zod@3.25.76)
-      isows: 1.0.7(ws@8.21.0(bufferutil@4.1.0))
+      isows: 1.0.7(ws@8.21.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))
       ox: 0.14.30(typescript@5.9.3)(zod@3.25.76)
       ws: 8.21.0(bufferutil@4.1.0)(utf-8-validate@6.0.6)
     optionalDependencies:
