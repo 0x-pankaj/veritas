@@ -27,6 +27,9 @@ keypair.json
 .DS_Store
 coverage/
 
+# generated demo seller identities (Devnet keypairs)
+apps/demo/.keys/
+
 # private strategy/planning docs — never publish to GitHub
 veritas-project.html
 PRODUCT.md

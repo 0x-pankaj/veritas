@@ -1,0 +1,30 @@
+{
+  "name": "@veritas/demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "seller:honest": "tsx src/sellers/honest.ts",
+    "seller:honest2": "tsx src/sellers/honest2.ts",
+    "seller:liar": "tsx src/sellers/liar.ts",
+    "sellers": "tsx src/sellers/run-all.ts",
+    "sellers:register": "tsx src/sellers/register-all.ts"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.98.0",
+    "@veritas/agent": "workspace:*",
+    "@veritas/core": "workspace:*",
+    "@veritas/onchain": "workspace:*",
+    "@veritas/seller": "workspace:*",
+    "express": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^26.1.0",
+    "tsx": "^4.23.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}
