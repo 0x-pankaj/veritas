@@ -13,6 +13,10 @@
     "./services/*": {
       "types": "./dist/services/*.d.ts",
       "default": "./dist/services/*.js"
+    },
+    "./db/schema": {
+      "types": "./dist/db/schema.d.ts",
+      "default": "./dist/db/schema.js"
     }
   },
   "scripts": {

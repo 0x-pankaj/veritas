@@ -3,10 +3,10 @@
 import { useState } from "react";
 import type { DemoResult, DemoSellerResult } from "../src/demo/orchestrator";
 
-/** USDC 6-decimal base units → "$0.0103". */
+/** USDC 6-decimal base units → "$0.0103". Sub-dollar amounts show 4 dp. */
 function fmtUsdc(baseUnits: string): string {
   const n = Number(baseUnits) / 1e6;
-  return `$${n.toFixed(n < 0.01 ? 4 : 2)}`;
+  return `$${n.toFixed(n !== 0 && Math.abs(n) < 1 ? 4 : 2)}`;
 }
 
 /** A dollar price string like "50100" → "$50,100.00". */
