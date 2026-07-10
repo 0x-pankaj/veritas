@@ -18,6 +18,10 @@ apps/dashboard/     Next.js seller dashboard + public truth-ledger explorer
 apps/demo/          the "liar caught by consensus" live demo
 ```
 
+```
+tests/e2e/          @veritas/e2e     full-system E2E (sellers → buy → verdict → settle → dashboard)
+```
+
 ## Quickstart
 
 ```sh
@@ -27,3 +31,23 @@ pnpm -w typecheck && pnpm -w test
 ```
 
 Requires Node ≥ 22, pnpm ≥ 10; Rust + Anchor + Solana CLI for `programs/`.
+
+## See it work
+
+The "liar caught by consensus" demo runs against Solana Devnet with Circle
+settlement mocked. Full step-by-step in [`docs/DEMO.md`](docs/DEMO.md):
+
+```sh
+# coordinator + 3 sellers (2 honest, 1 liar) + demo UI + dashboard
+pnpm --filter @veritas/coordinator dev                                  # :3001
+DEVNET_KEYPAIR=$(cat ~/.config/solana/id.json) \
+  pnpm --filter @veritas/demo sellers:register                          # registers sellers
+pnpm --filter @veritas/demo dev                                         # :3002  the demo
+pnpm --filter @veritas/dashboard dev                                    # :3003  explorer
+```
+
+One-command proof of the whole path (Devnet + Postgres):
+
+```sh
+DEVNET_KEYPAIR=$(cat ~/.config/solana/id.json) pnpm --filter @veritas/e2e test
+```

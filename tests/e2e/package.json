@@ -1,0 +1,29 @@
+{
+  "name": "@veritas/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.0",
+    "@solana/web3.js": "^1.98.0",
+    "@veritas/agent": "workspace:*",
+    "@veritas/coordinator": "workspace:*",
+    "@veritas/core": "workspace:*",
+    "@veritas/onchain": "workspace:*",
+    "@veritas/seller": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "express": "^5.0.0",
+    "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^26.1.0",
+    "@types/pg": "^8.20.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}
