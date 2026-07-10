@@ -244,6 +244,7 @@ export function buildBuyRoutes(deps: BuyDeps) {
         requestPda: q.solanaReqPda,
         responses: resRows.map((r) => ({
           sellerId: r.sellerId,
+          valueOrHash: r.valueOrHash,
           matched: r.matched,
           latencyMs: r.latencyMs,
         })),
