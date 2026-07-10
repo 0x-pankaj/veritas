@@ -1,0 +1,19 @@
+# Veritas demo sellers — 3 price feeds (2 honest + 1 liar) on the seller SDK
+# middleware. Funds + registers on Devnet, then serves. Reachable by the
+# coordinator over the platform's private network (set SELLER_HOST).
+# Build context = repo root:  docker build -f apps/demo/Dockerfile.sellers .
+FROM node:22-slim
+
+RUN corepack enable && corepack prepare pnpm@10.28.0 --activate
+WORKDIR /app
+
+COPY . .
+# The seller scripts run via tsx from source; build only the packages they import.
+RUN pnpm install --frozen-lockfile \
+  && pnpm exec turbo run build --filter=@veritas/agent --filter=@veritas/seller
+
+ENV NODE_ENV=production
+# Fixed ports so the registered endpoints are stable across restarts.
+EXPOSE 9101 9102 9103
+WORKDIR /app/apps/demo
+CMD ["pnpm", "sellers:register"]

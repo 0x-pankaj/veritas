@@ -40,7 +40,10 @@ export async function startSeller(role: Role, port?: number): Promise<RunningSel
     const s = built.app.listen(listenPort, () => res(s));
   });
   const actualPort = (server.address() as AddressInfo).port;
-  const url = `http://127.0.0.1:${actualPort}`;
+  // SELLER_HOST lets a deployed seller register a network-reachable endpoint
+  // (e.g. a Railway private host) instead of loopback. Defaults to localhost.
+  const host = process.env.SELLER_HOST ?? "127.0.0.1";
+  const url = `http://${host}:${actualPort}`;
   built.seller.endpoint = url;
   return { ...built, role, server, url, port: actualPort };
 }

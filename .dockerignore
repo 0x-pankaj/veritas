@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+**/.next
+**/*.tsbuildinfo
+target
+.git
+.keys
+apps/demo/.keys
+**/.env
+**/.env.*
+!**/.env.example
+**/scratchpad
+*.md

@@ -51,3 +51,10 @@ One-command proof of the whole path (Devnet + Postgres):
 ```sh
 DEVNET_KEYPAIR=$(cat ~/.config/solana/id.json) pnpm --filter @veritas/e2e test
 ```
+
+## Deploy
+
+Every service ships a monorepo-aware Dockerfile (coordinator, dashboard, demo,
+sellers) with per-service Railway configs (`railway.*.json`). Full turnkey
+runbook — project + Postgres + all services + public demo URL — in
+[`docs/DEPLOY.md`](docs/DEPLOY.md).
