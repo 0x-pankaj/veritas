@@ -146,9 +146,15 @@ What it asserts, all against live APIs:
 - each winner's Gateway credit equals its exact price (`pendingBatch` credit
   lands sub-second, moves to `balance` when Gateway batch-settles on Arc);
 - the fee address is credited the fee; the liar's credit is **0**;
-- settlement rows advance `PENDING → AVAILABLE` via the transfer reconciler
-  (`GET /v1/x402/transfers/:id`), which the production coordinator runs when
-  `MOCK_SETTLE=false` and `SETTLE_POLL_MS > 0`.
+- settlement rows carry real Gateway transfer ids and the reconciler
+  (`GET /v1/x402/transfers/:id`) is asserted truthful live: rows stay `PENDING`
+  while the transfer is pre-batch (`received`/`batched`) and flip to
+  `AVAILABLE` on `confirmed`/`completed`. The production coordinator runs this
+  loop when `MOCK_SETTLE=false` and `SETTLE_POLL_MS > 0`. Note: Gateway
+  batch-settles on its own cadence (observed >1h on the quiet testnet), so the
+  test waits a bounded grace window (`REAL_E2E_AVAILABLE_MS`, default 3 min)
+  and passes with rows truthfully `PENDING` if Circle hasn't batched yet — the
+  mapping itself is locked by `apps/coordinator/src/reconcile.test.ts`.
 
 Gateway facts baked into this flow (verified against the live API): auths must
 be valid for **at least 7 days** (`minValiditySeconds` — the batch must stay
