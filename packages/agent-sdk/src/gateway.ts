@@ -1,3 +1,5 @@
+import { GatewayClient, type SupportedChainName } from "@circle-fin/x402-batching/client";
+import { formatUnits } from "viem";
 import { TESTNET, type UsdcAmount } from "@veritas/core";
 
 /**
@@ -13,10 +15,51 @@ export interface GatewayAdapter {
   deposit?(amount: UsdcAmount): Promise<void>;
 }
 
+export interface CircleGatewayAdapterOpts {
+  /** Gateway-supported chain name; defaults to Arc Testnet. */
+  chain?: SupportedChainName;
+  /** Custom EVM RPC (Arc Testnet has a public default). */
+  rpcUrl?: string;
+}
+
+/**
+ * Full Gateway adapter over the buyer's OWN key (`GatewayClient` from
+ * `@circle-fin/x402-batching`): reads the unified balance and performs the
+ * real approve+deposit flow into the GatewayWallet contract. On Arc, gas is
+ * paid in native USDC — the faucet grant covers both gas and the deposit.
+ * Non-custodial: funds move only between the buyer's wallet and the buyer's
+ * own Gateway balance (Appendix B — Veritas never holds buyer USDC).
+ */
+export class CircleGatewayAdapter implements GatewayAdapter {
+  private readonly client: GatewayClient;
+  /** Buyer EVM address derived from the private key. */
+  readonly address: string;
+
+  constructor(privateKey: `0x${string}`, opts: CircleGatewayAdapterOpts = {}) {
+    this.client = new GatewayClient({
+      chain: opts.chain ?? "arcTestnet",
+      privateKey,
+      ...(opts.rpcUrl ? { rpcUrl: opts.rpcUrl } : {}),
+    });
+    this.address = this.client.address;
+  }
+
+  /** Available Gateway USDC (base units) for `address`. */
+  async getBalance(address: string): Promise<UsdcAmount> {
+    const balances = await this.client.getBalances(address as `0x${string}`);
+    return balances.gateway.available.toString();
+  }
+
+  /** Deposit `amount` base units of wallet USDC into the Gateway balance. */
+  async deposit(amount: UsdcAmount): Promise<void> {
+    await this.client.deposit(formatUnits(BigInt(amount), 6));
+  }
+}
+
 /**
  * Reads the buyer's Arc Gateway balance from the Circle testnet balances API.
- * Read-only — depositing requires the signed Circle deposit flow, which the
- * production `GatewayAdapter` provides.
+ * Read-only — depositing requires the signed Circle deposit flow, which
+ * `CircleGatewayAdapter` provides.
  */
 export class TestnetGatewayReader implements GatewayAdapter {
   constructor(
