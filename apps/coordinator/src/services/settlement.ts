@@ -133,9 +133,30 @@ export class CircleSettlementProvider implements SettlementProvider {
 
   private toX402(item: SettlementItem, kind: GatewayKind) {
     const a = item.authorization;
+    const requirements = {
+      scheme: "exact",
+      network: item.network,
+      asset: kind.asset,
+      amount: item.amount,
+      payTo: item.payTo,
+      maxTimeoutSeconds: 7 * 24 * 3600 + 100, // Gateway minimum validity + buffer
+      extra: {
+        name: "GatewayWalletBatched",
+        version: "1",
+        verifyingContract: kind.verifyingContract,
+      },
+    };
     return {
       payload: {
         x402Version: 2, // required by the Gateway x402 API
+        // The API requires the resource + the requirements the buyer accepted
+        // (mirrors what GatewayClient.pay puts in the Payment-Signature header).
+        resource: {
+          url: "https://veritas.example/verified-data",
+          description: "Veritas consensus purchase",
+          mimeType: "application/json",
+        },
+        accepted: requirements,
         payload: {
           signature: a.signature,
           authorization: {
@@ -148,19 +169,7 @@ export class CircleSettlementProvider implements SettlementProvider {
           },
         },
       },
-      requirements: {
-        scheme: "exact",
-        network: item.network,
-        asset: kind.asset,
-        amount: item.amount,
-        payTo: item.payTo,
-        maxTimeoutSeconds: 7 * 24 * 3600 + 100, // Gateway minimum validity + buffer
-        extra: {
-          name: "GatewayWalletBatched",
-          version: "1",
-          verifyingContract: kind.verifyingContract,
-        },
-      },
+      requirements,
     };
   }
 

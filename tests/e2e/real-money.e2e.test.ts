@@ -26,12 +26,7 @@ import { buildApp } from "@veritas/coordinator";
 import { CircleSettlementProvider } from "@veritas/coordinator/services/settlement";
 import { reconcileSettlements } from "@veritas/coordinator/services/reconcile";
 import { registerSeller } from "@veritas/seller";
-import {
-  CircleEip3009Signer,
-  CircleGatewayAdapter,
-  TestnetGatewayReader,
-  Veritas,
-} from "@veritas/agent";
+import { CircleEip3009Signer, CircleGatewayAdapter, Veritas } from "@veritas/agent";
 import { VeritasClient } from "@veritas/onchain";
 import { createDemoSellerApp } from "../../apps/demo/src/sellers/seller-factory";
 
@@ -46,6 +41,29 @@ const FEE = "300"; // 3 × 5000 × 200bps
 
 /** Fresh, never-used EVM address — Gateway balance starts at exactly 0. */
 const freshAddress = () => `0x${randomBytes(20).toString("hex")}`;
+
+/**
+ * Total credited USDC (base units) for a depositor on Arc: settled `balance`
+ * plus `pendingBatch` (TEE-credited sub-second at settle time, moves to
+ * `balance` once Gateway batch-settles on-chain).
+ */
+async function creditedBaseUnits(depositor: string): Promise<bigint> {
+  const res = await fetch(`${GATEWAY_API}/v1/balances`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ token: "USDC", sources: [{ domain: 26, depositor }] }),
+  });
+  if (!res.ok) throw new Error(`balances API ${res.status}`);
+  const body = (await res.json()) as {
+    balances?: { balance?: string; pendingBatch?: string }[];
+  };
+  const toUnits = (s: string) => {
+    const [int = "0", frac = ""] = s.split(".");
+    return BigInt(int) * 1_000_000n + BigInt((frac + "000000").slice(0, 6));
+  };
+  const b = body.balances?.[0];
+  return toUnits(b?.balance ?? "0") + toUnits(b?.pendingBatch ?? "0");
+}
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -80,7 +98,6 @@ describe.skipIf(gated)("REAL MONEY e2e: Arc Testnet Gateway settlement, nothing 
   const sellerIds: string[] = [];
   const symbol = `REAL-${Date.now()}/USD`;
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-  const balances = new TestnetGatewayReader();
   let coordinator: ServerType | undefined;
   let veritasClient: VeritasClient;
   let queryId: string | undefined;
@@ -219,33 +236,34 @@ describe.skipIf(gated)("REAL MONEY e2e: Arc Testnet Gateway settlement, nothing 
       expect(result.verdict.solanaTx).toBeTruthy();
       expect(result.finalCost).toBe("10300"); // 2 × 5000 + 300 fee
 
-      // 6. Real money moved: each winner's Gateway balance is credited the
-      //    exact price; the liar's stays 0; the fee lands at the fee address.
+      // 6. Real money moved: each winner is credited the exact price (TEE
+      //    credit lands in pendingBatch sub-second, then moves to balance
+      //    when the batch settles); the liar gets nothing; the fee lands.
       const winnerPayouts = ROLES.map((r, i) => ({ ...r, payout: payouts[i]! })).filter(
         (r) => r.role !== "liar",
       );
       for (const w of winnerPayouts) {
         const credited = await until(
           async () => {
-            const b = await balances.getBalance(w.payout);
-            return BigInt(b) > 0n ? b : undefined;
+            const b = await creditedBaseUnits(w.payout);
+            return b > 0n ? b : undefined;
           },
           { timeoutMs: 120_000, everyMs: 3_000, label: `credit for ${w.role}` },
         );
-        console.log(`${w.role} (${w.payout}) Gateway balance: ${credited}`);
-        expect(credited).toBe(PRICE);
+        console.log(`${w.role} (${w.payout}) credited: ${credited}`);
+        expect(credited.toString()).toBe(PRICE);
       }
-      const feeBalance = await until(
+      const feeCredited = await until(
         async () => {
-          const b = await balances.getBalance(feeAddress);
-          return BigInt(b) > 0n ? b : undefined;
+          const b = await creditedBaseUnits(feeAddress);
+          return b > 0n ? b : undefined;
         },
         { timeoutMs: 120_000, everyMs: 3_000, label: "fee credit" },
       );
-      expect(feeBalance).toBe(FEE);
+      expect(feeCredited.toString()).toBe(FEE);
 
       const liarPayout = payouts[ROLES.findIndex((r) => r.role === "liar")]!;
-      expect(await balances.getBalance(liarPayout)).toBe("0"); // liar earns 0
+      expect(await creditedBaseUnits(liarPayout)).toBe(0n); // liar earns 0
 
       // Buyer paid EXACTLY finalCost — the loser's auth was never redeemed.
       const buyerAfter = await until(
@@ -286,12 +304,13 @@ describe.skipIf(gated)("REAL MONEY e2e: Arc Testnet Gateway settlement, nothing 
           expect(statuses).not.toContain("FAILED");
           return statuses.every((s) => s === "AVAILABLE") ? true : undefined;
         },
-        { timeoutMs: 300_000, everyMs: 10_000, label: "settlements AVAILABLE" },
+        // Gateway batch-settles on its own cadence — allow up to 20 min.
+        { timeoutMs: 1_200_000, everyMs: 15_000, label: "settlements AVAILABLE" },
       );
 
       // 8. Reclaim Devnet rent.
       await veritasClient.closeRequest(Uint8Array.from(Buffer.from(queryId, "hex")));
     },
-    900_000,
+    1_800_000,
   );
 });
