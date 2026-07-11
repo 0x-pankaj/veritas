@@ -1,5 +1,5 @@
 import { GatewayClient, type SupportedChainName } from "@circle-fin/x402-batching/client";
-import { formatUnits } from "viem";
+import { formatUnits, parseUnits } from "viem";
 import { TESTNET, type UsdcAmount } from "@veritas/core";
 
 /**
@@ -78,6 +78,7 @@ export class TestnetGatewayReader implements GatewayAdapter {
     });
     if (!res.ok) throw new Error(`Gateway balances API ${res.status}`);
     const body = (await res.json()) as { balances?: { balance?: string }[] };
-    return body.balances?.[0]?.balance ?? "0";
+    // The API returns a DECIMAL USDC string (e.g. "1.5") — convert to base units.
+    return parseUnits(body.balances?.[0]?.balance ?? "0", 6).toString();
   }
 }

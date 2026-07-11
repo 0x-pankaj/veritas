@@ -10,6 +10,8 @@ const env = loadEnv(
     COORDINATOR_PORT: true,
     COORDINATOR_API_KEY: true,
     MOCK_SETTLE: true,
+    GATEWAY_API_URL: true,
+    SETTLE_POLL_MS: true,
     VERITAS_FEE_BPS: true,
     VERITAS_FEE_ADDRESS: true,
     SOLANA_RPC: true,
@@ -20,7 +22,9 @@ const env = loadEnv(
 let veritasClient: VeritasClient | undefined;
 
 const app = buildApp({
-  settlement: makeSettlementProvider(env.MOCK_SETTLE),
+  settlement: makeSettlementProvider(env.MOCK_SETTLE, {
+    gatewayApiUrl: env.GATEWAY_API_URL,
+  }),
   coordinatorApiKey: env.COORDINATOR_API_KEY,
   feeBps: env.VERITAS_FEE_BPS,
   feeAddress: env.VERITAS_FEE_ADDRESS,

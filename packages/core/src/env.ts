@@ -11,7 +11,9 @@ export const envSchema = z.object({
   VERITAS_PROGRAM_ID: z.string().min(32),
   ARC_RPC: z.string().url(),
   ARC_PRIVATE_KEY: z.string().regex(/^0x[0-9a-fA-F]{64}$/, "0x-prefixed 32-byte hex"),
-  GATEWAY_API_URL: z.string().url(),
+  GATEWAY_API_URL: z.string().url().default("https://gateway-api-testnet.circle.com"),
+  /** Poll interval (ms) for Gateway transfer reconciliation; 0 disables. */
+  SETTLE_POLL_MS: z.coerce.number().int().min(0).default(0),
   MOCK_SETTLE: z
     .enum(["true", "false"])
     .default("true")
