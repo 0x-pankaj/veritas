@@ -3,7 +3,9 @@ import { Connection, Keypair } from "@solana/web3.js";
 import { envSchema, loadEnv } from "@veritas/core";
 import { VeritasClient } from "@veritas/onchain";
 import { buildApp } from "./app.js";
+import { getDb } from "./db.js";
 import { makeSettlementProvider } from "./services/settlement.js";
+import { startSettlementReconciler } from "./services/reconcile.js";
 
 const env = loadEnv(
   envSchema.pick({
@@ -37,8 +39,17 @@ const app = buildApp({
   },
 });
 
+if (!env.MOCK_SETTLE && env.SETTLE_POLL_MS > 0) {
+  startSettlementReconciler(
+    getDb(),
+    { gatewayApiUrl: env.GATEWAY_API_URL },
+    env.SETTLE_POLL_MS,
+  );
+}
+
 serve({ fetch: app.fetch, port: env.COORDINATOR_PORT }, (info) => {
   console.log(
-    `veritas-coordinator listening on :${info.port} (settle=${env.MOCK_SETTLE ? "mock" : "circle"})`,
+    `veritas-coordinator listening on :${info.port} (settle=${env.MOCK_SETTLE ? "mock" : "circle"}` +
+      `${!env.MOCK_SETTLE && env.SETTLE_POLL_MS > 0 ? `, reconcile every ${env.SETTLE_POLL_MS}ms` : ""})`,
   );
 });
