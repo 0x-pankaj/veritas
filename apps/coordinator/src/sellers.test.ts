@@ -73,7 +73,10 @@ describe.skipIf(!process.env.DATABASE_URL)("registry + discovery", () => {
   });
 
   it("pickSellers returns top-k by reputation", async () => {
-    const picked = await pickSellers(getDb(), "crypto-prices", "ETH/USD", 2);
+    // Ranking only — endpoint health is covered by registry.test.ts.
+    const picked = await pickSellers(getDb(), "crypto-prices", "ETH/USD", 2, {
+      probe: async () => true,
+    });
     const ours = picked.filter((s) => s.solanaPubkey.startsWith(run));
     expect(ours[0]!.name).toBe("seller-2");
   });

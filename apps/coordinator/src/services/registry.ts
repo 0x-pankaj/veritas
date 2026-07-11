@@ -62,15 +62,35 @@ export async function listSellers(db: Db, filter: DiscoveryFilter): Promise<Sell
 }
 
 /**
+ * Endpoint liveness probe. `GET /veritas/402` is mounted by every seller
+ * middleware adapter and needs no credential — ANY HTTP response within the
+ * timeout counts as alive; only connect failures/timeouts mark a seller dead.
+ */
+export async function probeSeller(endpoint: string, timeoutMs = 1500): Promise<boolean> {
+  try {
+    await fetch(`${endpoint}/veritas/402`, { signal: AbortSignal.timeout(timeoutMs) });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Select K sellers for a consensus round: top-reputation active sellers
- * covering the symbol. Simple matching — no semantic search (PRODUCT §7.3).
+ * covering the symbol, skipping dead endpoints (stale registrations with tied
+ * reputation would otherwise occupy candidate slots and break quorum). All
+ * candidates are probed concurrently; reputation order is preserved among the
+ * healthy. Simple matching — no semantic search (PRODUCT §7.3).
  */
 export async function pickSellers(
   db: Db,
   category: string,
   symbol: string,
   k: number,
+  opts: { probe?: (endpoint: string) => Promise<boolean> } = {},
 ): Promise<Seller[]> {
   const candidates = await listSellers(db, { category, symbol });
-  return candidates.slice(0, k);
+  const probe = opts.probe ?? probeSeller;
+  const alive = await Promise.all(candidates.map((c) => probe(c.endpoint)));
+  return candidates.filter((_, i) => alive[i]).slice(0, k);
 }
