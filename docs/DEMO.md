@@ -111,3 +111,46 @@ it:
 ```sh
 DEVNET_KEYPAIR=$(cat ~/.config/solana/id.json) pnpm --filter @veritas/e2e test
 ```
+
+---
+
+## Real money mode (Arc Testnet, nothing mocked)
+
+The mock-settle demo above never touches Circle. The **real-money E2E** runs the
+same flow with actual USDC on Arc Testnet: the buyer signs real EIP-3009 auths
+over the `GatewayWalletBatched` EIP-712 domain, the coordinator verifies each
+signature AND the buyer's Gateway balance against the live Gateway API before
+fan-out, and after the Solana verdict it redeems ONLY the winners' auths + the
+fee. USDC provably moves; the liar's auth expires unredeemed.
+
+One-time setup:
+
+1. Put a fresh EOA private key in `.env` as `ARC_PRIVATE_KEY` (never commit it;
+   it must be an EOA — Gateway recovers the signer with ecrecover).
+2. Claim testnet USDC for that address at https://faucet.circle.com
+   (token USDC, network **Arc Testnet**). USDC is also Arc's gas token, so one
+   claim covers gas + deposit + purchases.
+3. Nothing else — the test deposits into Gateway itself (`ensureDeposit`).
+
+Run it:
+
+```sh
+DEVNET_KEYPAIR=$(cat ~/.config/solana/id.json) \
+  pnpm --filter @veritas/e2e test real-money
+```
+
+What it asserts, all against live APIs:
+
+- buyer Gateway balance is debited **exactly** `finalCost` (winners + fee) —
+  the loser's authorization is never redeemed;
+- each winner's Gateway credit equals its exact price (`pendingBatch` credit
+  lands sub-second, moves to `balance` when Gateway batch-settles on Arc);
+- the fee address is credited the fee; the liar's credit is **0**;
+- settlement rows advance `PENDING → AVAILABLE` via the transfer reconciler
+  (`GET /v1/x402/transfers/:id`), which the production coordinator runs when
+  `MOCK_SETTLE=false` and `SETTLE_POLL_MS > 0`.
+
+Gateway facts baked into this flow (verified against the live API): auths must
+be valid for **at least 7 days** (`minValiditySeconds` — the batch must stay
+redeemable until it lands on-chain), and the x402 verify/settle endpoints
+require `paymentPayload.resource` + `paymentPayload.accepted`.
