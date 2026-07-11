@@ -16,38 +16,6 @@ export function fmtPrice(value: string | null | undefined): string {
   return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-/** Match accuracy as a whole percent, or null when the seller has no rounds. */
-export function accuracyPct(matched: number, served: number): number | null {
-  if (served <= 0) return null;
-  return Math.round((matched / served) * 100);
-}
-
-export interface EarningsBreakdown {
-  /** Batch-settled on Arc (AVAILABLE). */
-  settled: string;
-  /** TEE-credited, awaiting batch settlement (PENDING). */
-  pending: string;
-  total: string;
-}
-
-/** Sum a seller's settlements into settled / pending / total (base units). */
-export function aggregateEarnings(
-  rows: { amount: string; status: string }[],
-): EarningsBreakdown {
-  let settled = 0n;
-  let pending = 0n;
-  for (const r of rows) {
-    const a = BigInt(r.amount);
-    if (r.status === "AVAILABLE") settled += a;
-    else if (r.status === "PENDING") pending += a;
-  }
-  return {
-    settled: settled.toString(),
-    pending: pending.toString(),
-    total: (settled + pending).toString(),
-  };
-}
-
 /** Short hex/base58 for display: "AbCd…WxYz". */
 export function truncateMiddle(s: string | null | undefined, edge = 6): string {
   if (!s) return "—";

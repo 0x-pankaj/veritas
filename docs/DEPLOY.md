@@ -57,13 +57,16 @@ curl https://<coordinator-domain>/health     # {"ok":true,"service":"veritas-coo
 
 ## 3. Dashboard
 
-Service with config path `railway.dashboard.json`. Variables:
+The dashboard is a **thin coordinator client** (hono/client over fetch) — no DB
+driver, no Node-only deps — so it can run on Railway, **Vercel, or Cloudflare
+Pages**. Service with config path `railway.dashboard.json`. Variables:
 
 | Variable | Value |
 |---|---|
-| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
+| `VERITAS_FACILITATOR_URL` | `https://<coordinator-domain>` (public) |
 
-Generate a domain → the truth-ledger explorer.
+Generate a domain → the truth-ledger explorer. (On Vercel/CF Pages, just set the
+same `VERITAS_FACILITATOR_URL` and deploy `apps/dashboard`.)
 
 ## 4. Demo sellers
 

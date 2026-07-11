@@ -5,7 +5,7 @@ import { zValidator } from "@hono/zod-validator";
 import { eq } from "drizzle-orm";
 import { CATEGORIES, PROTOCOL, TESTNET, type Eip3009Authorization } from "@veritas/core";
 import { getDb } from "../db.js";
-import { queries, responses, settlements } from "../db/schema.js";
+import { queries, responses, sellers, settlements } from "../db/schema.js";
 import { pickSellers } from "../services/registry.js";
 import { fanout, quorumMet } from "../services/fanout.js";
 import { runNumericRound } from "../services/verifier.js";
@@ -233,27 +233,40 @@ export function buildBuyRoutes(deps: BuyDeps) {
       const [q] = await db.select().from(queries).where(eq(queries.id, queryId));
       if (!q) return c.json({ error: "unknown query" as const }, 404);
       const [resRows, setRows] = await Promise.all([
-        db.select().from(responses).where(eq(responses.queryId, queryId)),
-        db.select().from(settlements).where(eq(settlements.queryId, queryId)),
+        db
+          .select({
+            sellerId: responses.sellerId,
+            name: sellers.name,
+            valueOrHash: responses.valueOrHash,
+            matched: responses.matched,
+            latencyMs: responses.latencyMs,
+          })
+          .from(responses)
+          .innerJoin(sellers, eq(responses.sellerId, sellers.id))
+          .where(eq(responses.queryId, queryId)),
+        db
+          .select({
+            sellerId: settlements.sellerId,
+            name: sellers.name,
+            amount: settlements.amount,
+            status: settlements.status,
+            gatewayTx: settlements.gatewayTx,
+          })
+          .from(settlements)
+          .innerJoin(sellers, eq(settlements.sellerId, sellers.id))
+          .where(eq(settlements.queryId, queryId)),
       ]);
       return c.json({
         queryId: q.id,
         status: q.status,
         truth: q.truth,
+        k: q.k,
+        cost: q.cost,
+        buyer: q.buyer,
         solanaTx: q.solanaTx,
         requestPda: q.solanaReqPda,
-        responses: resRows.map((r) => ({
-          sellerId: r.sellerId,
-          valueOrHash: r.valueOrHash,
-          matched: r.matched,
-          latencyMs: r.latencyMs,
-        })),
-        settlements: setRows.map((s) => ({
-          sellerId: s.sellerId,
-          amount: s.amount,
-          status: s.status,
-          gatewayTx: s.gatewayTx,
-        })),
+        responses: resRows,
+        settlements: setRows,
       });
     });
 }

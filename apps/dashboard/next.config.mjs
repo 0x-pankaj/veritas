@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@veritas/coordinator", "@veritas/core"],
-  // pg is a native-ish server dep; keep it external to the server bundle.
-  serverExternalPackages: ["pg"],
+  // The dashboard is now a thin HTTP client of the coordinator (hono/client
+  // over fetch) — no DB driver, no Node-only deps — so it deploys anywhere,
+  // including edge/static hosts.
 };
 
 export default nextConfig;

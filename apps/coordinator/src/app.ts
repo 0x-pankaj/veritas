@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { healthRoute } from "./routes/health.js";
 import { sellersRoute } from "./routes/sellers.js";
+import { explorerRoute } from "./routes/explorer.js";
 import { buildBuyRoutes, type BuyDeps } from "./routes/buy.js";
 
 /**
@@ -13,6 +14,7 @@ export function buildApp(deps: BuyDeps) {
   return new Hono()
     .route("/", healthRoute)
     .route("/", sellersRoute)
+    .route("/", explorerRoute)
     .route("/", buildBuyRoutes(deps));
 }
 

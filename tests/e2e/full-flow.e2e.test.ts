@@ -144,6 +144,8 @@ describe.skipIf(gated)("full-flow E2E: sellers → buy → Solana verdict → se
       });
     });
     coordinator = coordServer;
+    // The dashboard data layer is a thin coordinator client — point it here.
+    process.env.VERITAS_FACILITATOR_URL = coordUrl;
 
     // 4. Register each seller on Devnet + the coordinator (unique symbol → isolated).
     for (const [i, spec] of ROLES.entries()) {
