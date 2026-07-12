@@ -1,3 +1,10 @@
+import { config } from "dotenv";
+import { resolve } from "node:path";
+// Load the repo-root .env in local dev; silently no-ops when absent (prod
+// containers get env from the platform).
+config({ path: resolve(import.meta.dirname, "../../../.env") });
+config(); // also honor a cwd-local .env
+
 import { serve } from "@hono/node-server";
 import { Connection, Keypair } from "@solana/web3.js";
 import { envSchema, loadEnv } from "@veritas/core";

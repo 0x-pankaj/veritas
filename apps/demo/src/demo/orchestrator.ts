@@ -1,4 +1,4 @@
-import { Veritas, LocalEip3009Signer } from "@veritas/agent";
+import { Veritas, CircleEip3009Signer, LocalEip3009Signer } from "@veritas/agent";
 import type { Category } from "@veritas/core";
 import { DEMO } from "../sellers/prices";
 
@@ -93,9 +93,16 @@ export async function runDemo(opts: RunDemoOpts): Promise<DemoResult> {
   if (opts.mock) return mockDemoResult(opts.symbol);
 
   const symbol = opts.symbol ?? DEMO.symbol;
+  // With ARC_PRIVATE_KEY set the demo signs REAL EIP-3009 auths and (when the
+  // coordinator runs MOCK_SETTLE=false) real USDC moves on Arc Testnet.
+  // Without it, the structurally-valid local signer keeps the mock-settle
+  // demo runnable with zero setup.
+  const arcKey = process.env.ARC_PRIVATE_KEY as `0x${string}` | undefined;
   const veritas = new Veritas({
     facilitatorUrl: opts.facilitatorUrl,
-    signer: new LocalEip3009Signer(opts.buyerAddress),
+    signer: arcKey
+      ? new CircleEip3009Signer(arcKey)
+      : new LocalEip3009Signer(opts.buyerAddress),
   });
 
   const bought = await veritas.buy({
