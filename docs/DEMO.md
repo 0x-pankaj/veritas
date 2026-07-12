@@ -151,10 +151,13 @@ What it asserts, all against live APIs:
   while the transfer is pre-batch (`received`/`batched`) and flip to
   `AVAILABLE` on `confirmed`/`completed`. The production coordinator runs this
   loop when `MOCK_SETTLE=false` and `SETTLE_POLL_MS > 0`. Note: Gateway
-  batch-settles on its own cadence (observed >1h on the quiet testnet), so the
-  test waits a bounded grace window (`REAL_E2E_AVAILABLE_MS`, default 3 min)
-  and passes with rows truthfully `PENDING` if Circle hasn't batched yet — the
-  mapping itself is locked by `apps/coordinator/src/reconcile.test.ts`.
+  batch-settles on its own cadence (~1.5–2h observed on the quiet testnet —
+  transfers reach `completed` with an Arc batch tx and recipient funds move
+  `pendingBatch` → spendable `balance`), so the test waits a bounded grace
+  window (`REAL_E2E_AVAILABLE_MS`, default 3 min) and passes with rows
+  truthfully `PENDING` if Circle hasn't batched yet. The mapping is locked by
+  `apps/coordinator/src/reconcile.test.ts`, and the live `PENDING → AVAILABLE`
+  flip was verified for real once the batch landed.
 
 Gateway facts baked into this flow (verified against the live API): auths must
 be valid for **at least 7 days** (`minValiditySeconds` — the batch must stay
