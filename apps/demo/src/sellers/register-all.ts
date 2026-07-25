@@ -6,7 +6,7 @@ import {
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
 import { registerRunningSeller, startSeller, type RunningSeller } from "./run-seller.js";
-import type { Role } from "./definitions.js";
+import { SELLER_DEFS, type Role } from "./definitions.js";
 
 /**
  * One-command demo setup: start all three sellers, fund their Solana
@@ -30,7 +30,9 @@ const connection = new Connection(
 );
 
 const running: RunningSeller[] = [];
-for (const role of ROLES) running.push(await startSeller(role));
+// Explicit ports: three sellers share this process, so they must not all
+// inherit a single injected PORT.
+for (const role of ROLES) running.push(await startSeller(role, SELLER_DEFS[role].port));
 
 // Fund any seller identity that is short on SOL.
 const underfunded = new Transaction();

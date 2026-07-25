@@ -51,6 +51,7 @@ describe("LocalEip3009Signer", () => {
 describe("Veritas.buy budget enforcement", () => {
   let coordinatorUrl: string;
   let server: ServerType;
+  let probeTarget: Server;
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
   const created: string[] = [];
 
@@ -58,6 +59,17 @@ describe("Veritas.buy budget enforcement", () => {
 
   beforeAll(async () => {
     if (skip) return;
+    // pickSellers health-probes every candidate, so the seeded endpoints must
+    // answer. This listener only has to respond at all (any status = alive);
+    // the quote path never fans out to it.
+    const probeUrl = await new Promise<string>((res) => {
+      probeTarget = express()
+        .get("/veritas/402", (_req, resp) => void resp.status(402).json({}))
+        .listen(0, "127.0.0.1", () => {
+          const { port } = probeTarget.address() as AddressInfo;
+          res(`http://127.0.0.1:${port}`);
+        });
+    });
     // Seed 3 cheap sellers so /quote succeeds (no Solana needed for quote).
     const run = `agent-budget-${Date.now()}`;
     for (const i of [0, 1, 2]) {
@@ -71,7 +83,7 @@ describe("Veritas.buy budget enforcement", () => {
           pk,
           `0x${String(i + 3).repeat(40).slice(0, 40)}`,
           `${run}-${i}`,
-          `http://127.0.0.1:1`,
+          probeUrl,
           "5000",
           "crypto-prices",
           [`${run}/USD`],
@@ -104,6 +116,7 @@ describe("Veritas.buy budget enforcement", () => {
   afterAll(async () => {
     if (skip) return;
     server.close();
+    probeTarget?.close();
     if (created.length) {
       await pool.query("DELETE FROM sellers WHERE solana_pubkey = ANY($1)", [created]);
     }

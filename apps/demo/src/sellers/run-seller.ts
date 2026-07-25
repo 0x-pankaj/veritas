@@ -35,6 +35,10 @@ export async function startSeller(role: Role, port?: number): Promise<RunningSel
     quote: def.quote,
     poisonable: def.poisonable,
   });
+  // PORT is only honoured for a single-seller process (the standalone
+  // honest/honest2/liar entry scripts). The multi-seller runners pass explicit
+  // ports: a platform that injects one PORT per service (Railway) would
+  // otherwise collapse all three onto the same port → EADDRINUSE.
   const listenPort = port ?? Number(process.env.PORT ?? def.port);
   const server = await new Promise<Server>((res) => {
     const s = built.app.listen(listenPort, () => res(s));
@@ -42,7 +46,10 @@ export async function startSeller(role: Role, port?: number): Promise<RunningSel
   const actualPort = (server.address() as AddressInfo).port;
   // SELLER_HOST lets a deployed seller register a network-reachable endpoint
   // (e.g. a Railway private host) instead of loopback. Defaults to localhost.
-  const host = process.env.SELLER_HOST ?? "127.0.0.1";
+  // `||` not `??`: a platform that injects an unresolved/blank reference gives
+  // us an empty string, which would build the invalid endpoint `http://:9101`
+  // and get rejected by the coordinator's registration schema.
+  const host = process.env.SELLER_HOST || "127.0.0.1";
   const url = `http://${host}:${actualPort}`;
   built.seller.endpoint = url;
   return { ...built, role, server, url, port: actualPort };
