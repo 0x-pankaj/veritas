@@ -11,6 +11,15 @@ importers:
       '@eslint/js':
         specifier: ^9.20.0
         version: 9.39.4
+      '@veritas/agent':
+        specifier: workspace:*
+        version: link:packages/agent-sdk
+      '@veritas/core':
+        specifier: workspace:*
+        version: link:packages/core
+      '@veritas/onchain':
+        specifier: workspace:*
+        version: link:packages/onchain
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
@@ -37,7 +46,7 @@ importers:
     dependencies:
       '@circle-fin/x402-batching':
         specifier: ^3.2.0
-        version: 3.2.0(@x402/core@2.18.0)(@x402/evm@2.18.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))(viem@2.54.6(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76))
+        version: 3.2.0(@x402/core@2.18.0)(@x402/evm@2.18.0(bufferutil@4.1.0)(typescript@5.9.3))(viem@2.54.6(bufferutil@4.1.0)(typescript@5.9.3)(zod@3.25.76))
       '@hono/node-server':
         specifier: ^1.14.0
         version: 1.19.14(hono@4.12.28)
@@ -181,7 +190,7 @@ importers:
     dependencies:
       '@circle-fin/x402-batching':
         specifier: ^3.2.0
-        version: 3.2.0(@x402/core@2.18.0)(@x402/evm@2.18.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))(viem@2.54.6(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76))
+        version: 3.2.0(@x402/core@2.18.0)(@x402/evm@2.18.0(bufferutil@4.1.0)(typescript@5.9.3))(viem@2.54.6(bufferutil@4.1.0)(typescript@5.9.3)(zod@3.25.76))
       '@veritas/core':
         specifier: workspace:*
         version: link:../core
@@ -3322,7 +3331,7 @@ snapshots:
 
   '@babel/runtime@7.29.7': {}
 
-  '@circle-fin/x402-batching@3.2.0(@x402/core@2.18.0)(@x402/evm@2.18.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))(viem@2.54.6(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76))':
+  '@circle-fin/x402-batching@3.2.0(@x402/core@2.18.0)(@x402/evm@2.18.0(bufferutil@4.1.0)(typescript@5.9.3))(viem@2.54.6(bufferutil@4.1.0)(typescript@5.9.3)(zod@3.25.76))':
     dependencies:
       '@x402/core': 2.18.0
       viem: 2.54.6(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)(zod@3.25.76)
@@ -5183,7 +5192,7 @@ snapshots:
     dependencies:
       ws: 7.5.11(bufferutil@4.1.0)(utf-8-validate@6.0.6)
 
-  isows@1.0.7(ws@8.21.0(bufferutil@4.1.0)(utf-8-validate@6.0.6)):
+  isows@1.0.7(ws@8.21.0(bufferutil@4.1.0)):
     dependencies:
       ws: 8.21.0(bufferutil@4.1.0)(utf-8-validate@6.0.6)
 
@@ -5931,7 +5940,7 @@ snapshots:
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
       abitype: 1.2.3(typescript@5.9.3)(zod@3.25.76)
-      isows: 1.0.7(ws@8.21.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))
+      isows: 1.0.7(ws@8.21.0(bufferutil@4.1.0))
       ox: 0.14.30(typescript@5.9.3)(zod@3.25.76)
       ws: 8.21.0(bufferutil@4.1.0)(utf-8-validate@6.0.6)
     optionalDependencies:

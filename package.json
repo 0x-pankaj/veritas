@@ -13,10 +13,14 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "purchase": "tsx scripts/live-purchase.mts"
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",
+    "@veritas/agent": "workspace:*",
+    "@veritas/core": "workspace:*",
+    "@veritas/onchain": "workspace:*",
     "dotenv": "^17.4.2",
     "eslint": "^9.20.0",
     "prettier": "^3.5.0",
