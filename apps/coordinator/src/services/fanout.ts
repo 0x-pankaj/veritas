@@ -1,4 +1,4 @@
-import type { FanoutRequest, FanoutResponse } from "@veritas/core";
+import { verifyResponseSig, type FanoutRequest, type FanoutResponse } from "@veritas/core";
 import type { Seller } from "../db/schema.js";
 
 export interface FanoutResult {
@@ -6,6 +6,10 @@ export interface FanoutResult {
   value: string;
   payload: unknown;
   latencyMs: number;
+  /** ed25519 signature by the seller's Solana identity key — verified against
+   *  the registered pubkey before the response is accepted. Null only for
+   *  sellers on a pre-signature SDK (accepted but marked unsigned). */
+  sig: string | null;
 }
 
 export interface FanoutOpts {
@@ -43,11 +47,26 @@ export async function fanout(
       if (!res.ok) return null;
       const body = (await res.json()) as FanoutResponse;
       if (typeof body.value !== "string" || body.value.length === 0) return null;
+      // A present-but-invalid signature is an active forgery attempt (or a
+      // key mismatch) — drop the response entirely. Absent signature = legacy
+      // SDK; accepted, stored as unsigned.
+      if (body.sig !== undefined) {
+        if (
+          typeof body.sig !== "string" ||
+          !verifyResponseSig(body.sig, request.queryId, body.value, seller.solanaPubkey)
+        ) {
+          console.warn(
+            `fanout: dropping response with invalid signature from ${seller.name} (${seller.solanaPubkey})`,
+          );
+          return null;
+        }
+      }
       return {
         seller,
         value: body.value,
         payload: body.payload ?? null,
         latencyMs: Date.now() - started,
+        sig: typeof body.sig === "string" ? body.sig : null,
       };
     } catch {
       return null; // timeout / network / bad JSON — dropped, quorum decides

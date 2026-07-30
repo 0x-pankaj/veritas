@@ -100,6 +100,10 @@ export const responses = pgTable(
     valueOrHash: text("value_or_hash").notNull(),
     latencyMs: integer("latency_ms").notNull(),
     matched: boolean("matched"),
+    // ed25519 signature (0x-hex) of responseSigMessage(queryId, valueOrHash)
+    // by the seller's Solana identity key; verified on ingest, republished on
+    // /verify so third parties can re-check authorship. Null = legacy unsigned.
+    signature: text("signature"),
   },
   (t) => [uniqueIndex("responses_query_seller_uq").on(t.queryId, t.sellerId)],
 );

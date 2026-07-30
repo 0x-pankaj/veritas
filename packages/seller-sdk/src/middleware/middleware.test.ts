@@ -2,7 +2,8 @@ import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { afterAll, describe, expect, it } from "vitest";
 import express from "express";
-import { commitment } from "@veritas/core";
+import { Keypair } from "@solana/web3.js";
+import { commitment, verifyResponseSig } from "@veritas/core";
 import { fanout } from "@veritas/coordinator/services/fanout";
 import type { Seller } from "../types.js";
 import { build402, handleServe, type SellerMiddlewareOpts } from "./core.js";
@@ -11,10 +12,11 @@ import { veritasSeller } from "./express.js";
 const API_KEY = "test-coordinator-key";
 
 function mkSeller(over: Partial<Seller> = {}): Seller {
+  const keypair = Keypair.generate();
   return {
     id: "seller-1",
     name: "acme-prices",
-    solanaPubkey: "pk".padEnd(32, "x"),
+    solanaPubkey: keypair.publicKey.toBase58(),
     payoutAddress: "0x1111111111111111111111111111111111111111",
     endpoint: "http://localhost:0",
     price: "1000",
@@ -28,7 +30,7 @@ function mkSeller(over: Partial<Seller> = {}): Seller {
     coordinatorUrl: "http://localhost:3001",
     reputation: 500,
     status: "ACTIVE",
-    keypair: undefined as never,
+    keypair,
     ...over,
   };
 }
@@ -63,6 +65,20 @@ describe("handleServe", () => {
       payload: { symbol: "BTC/USD", price: 50000 },
     });
     expect((out.body as Record<string, unknown>).commitment).toBeUndefined();
+  });
+
+  it("signs every response with the seller's Solana identity key", async () => {
+    const out = await handleServe(opts, API_KEY, {
+      queryId: "q-signed",
+      category: "crypto-prices",
+      symbol: "BTC/USD",
+    });
+    const { sig, value } = out.body as { sig: string; value: string };
+    expect(sig).toMatch(/^0x[0-9a-f]{128}$/);
+    expect(verifyResponseSig(sig, "q-signed", value, opts.seller.solanaPubkey)).toBe(true);
+    // Bound to this query and value — any change invalidates it.
+    expect(verifyResponseSig(sig, "q-other", value, opts.seller.solanaPubkey)).toBe(false);
+    expect(verifyResponseSig(sig, "q-signed", "50001", opts.seller.solanaPubkey)).toBe(false);
   });
 
   it("attaches a payload commitment in content-addressed mode", async () => {
@@ -150,6 +166,8 @@ describe("express adapter through coordinator fan-out", () => {
       coordinatorApiKey: API_KEY,
     });
     expect(ok.map((r) => r.value).sort()).toEqual(["50000", "50010"]);
+    // The coordinator accepted them, so every signature verified on ingest.
+    for (const r of ok) expect(r.sig).toMatch(/^0x[0-9a-f]{128}$/);
 
     // Wrong credential → sellers refuse → nothing collected.
     const denied = await fanout(req, [s1 as never, s2 as never], {

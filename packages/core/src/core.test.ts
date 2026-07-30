@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { ed25519 } from "@noble/curves/ed25519";
+import { base58 } from "@scure/base";
 import { canonicalJson, commitment, keccak256, sha256 } from "./hash.js";
+import { signResponse, verifyResponseSig } from "./sign.js";
 import { envSchema, loadEnv } from "./env.js";
 import { build402Body, parse402Body } from "./x402.js";
 import { PROTOCOL } from "./constants.js";
@@ -53,6 +56,24 @@ describe("x402", () => {
     const parsed = parse402Body(body);
     expect(parsed.maxAmountRequired).toBe("1000");
     expect(parsed.extra.veritas.sellerId).toBe("s1");
+  });
+});
+
+describe("signed responses", () => {
+  it("sign/verify round-trip, bound to query id and value", () => {
+    // Deterministic 64-byte "solana" secret key: seed ‖ pubkey.
+    const seed = new Uint8Array(32).fill(7);
+    const pub = ed25519.getPublicKey(seed);
+    const secretKey = new Uint8Array([...seed, ...pub]);
+    const pubkeyB58 = base58.encode(pub);
+
+    const sig = signResponse("q1", "50000.00", secretKey);
+    expect(sig).toMatch(/^0x[0-9a-f]{128}$/);
+    expect(verifyResponseSig(sig, "q1", "50000.00", pubkeyB58)).toBe(true);
+    expect(verifyResponseSig(sig, "q2", "50000.00", pubkeyB58)).toBe(false);
+    expect(verifyResponseSig(sig, "q1", "50000.01", pubkeyB58)).toBe(false);
+    expect(verifyResponseSig("0xnot-hex", "q1", "50000.00", pubkeyB58)).toBe(false);
+    expect(verifyResponseSig(sig, "q1", "50000.00", "not-base58!")).toBe(false);
   });
 });
 

@@ -48,10 +48,20 @@ railway variables --service sellers \
   --set "DEVNET_KEYPAIR=$DEVNET_KEYPAIR" \
   --skip-deploys >/dev/null
 
-echo "→ demo"
-railway variables --service demo \
-  --set "ARC_PRIVATE_KEY=$ARC_PRIVATE_KEY" \
-  --skip-deploys >/dev/null
+# Pin the demo sellers' Solana identities. Without these, each seller mints a
+# fresh keypair inside the container on every deploy (the .keys/ dir is
+# .dockerignored), which resets reputation and orphans the old registry rows.
+# The canonical identities are the local apps/demo/.keys/*.json files.
+if [ -f apps/demo/.keys/honest.json ]; then
+  echo "→ sellers (pinned identities)"
+  railway variables --service sellers \
+    --set "DEMO_HONEST_KEYPAIR=$(cat apps/demo/.keys/honest.json)" \
+    --set "DEMO_HONEST2_KEYPAIR=$(cat apps/demo/.keys/honest2.json)" \
+    --set "DEMO_LIAR_KEYPAIR=$(cat apps/demo/.keys/liar.json)" \
+    --skip-deploys >/dev/null
+else
+  echo "warn: apps/demo/.keys/honest.json missing — seller identities NOT pinned" >&2
+fi
 
 echo
 echo "All secrets set. Nothing was printed and no redeploy was triggered."

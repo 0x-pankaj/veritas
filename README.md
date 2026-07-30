@@ -22,14 +22,15 @@ Phases 0–4 complete. The system is deployed and settling **real testnet USDC**
 |---|---|---|
 | Veritas Anchor program | Solana Devnet | **live** — `CiGK2btZHdeW1U327ZLDhTQhDhP9TB6U16oG4a21YTUG` |
 | Coordinator (facilitator) | Railway | **live** — [`/health`](https://coordinator-production-b0e4.up.railway.app/health) |
-| Demo sellers (2 honest + 1 liar) | Railway | **live** — registered on Devnet, reputation 500 |
+| Demo sellers (2 honest + 1 liar) | Railway | **live** — pinned Devnet identities, signed responses, real payout EOAs |
 | Postgres mirror | Neon | **live** — migrations applied on boot |
 | Circle settlement | Arc Testnet | **real** — `MOCK_SETTLE=false`, reconciler every 15s |
 | Demo UI + dashboard | Vercel | deploying — see [`docs/DEPLOY.md`](docs/DEPLOY.md) |
 
 Quality gates: `pnpm -w typecheck` green (14/14), `pnpm -w test` green
-(51 TypeScript tests + 7 Rust litesvm tests; 7 further tests are env-gated on a
-Devnet key and run separately).
+(56 TypeScript tests + 7 Rust litesvm tests; 7 further tests are env-gated on a
+Devnet key and run separately). The signature path is tested adversarially:
+forged signatures and tampered values are dropped at ingest.
 
 ### Verify it yourself, right now
 
@@ -51,32 +52,52 @@ health-probing over a private network, and pricing.
 ### A real purchase on this deployment — check it yourself
 
 Three sellers answered `50000`, `50100` and `55000`. Solana computed the truth,
-the two honest sellers were paid in full, and the liar earned nothing:
+the two honest sellers were paid in full, and the liar earned nothing — and
+every answer carries the seller's own ed25519 signature, re-verified
+client-side:
 
 ```
-consensus truth   50100        paid  $0.0103  (authorized up to $0.02)
-acme-prices       50000.00     matched   paid $0.005
-globex-feed       50100.00     matched   paid $0.005
-sketchy-oracle    55000.00     OUTLIER   paid $0
+consensus truth   50100        paid  $0.0103  (authorized up to $0.02)   5.4s
+acme-prices       50000.00     matched   paid $0.005   sig valid
+globex-feed       50100.00     matched   paid $0.005   sig valid
+sketchy-oracle    55000.00     OUTLIER   paid $0       sig valid
 ```
 
 **The verdict, on Solana Devnet** —
-[`tk9UnSU2…hhNBD`](https://solscan.io/tx/tk9UnSU2ZKRMwynD5RA4NuDARS5htBosKB6MU7vqDPqnZpB2MmVuaG2iTr2ymfzykPM8thoaWY92MGc9a7hhNBD?cluster=devnet)
+[`3E3wT2Fg…ttuEX`](https://solscan.io/tx/3E3wT2FggfA6Y6FjRqXTAypHzAHqcM2VqH5nHJvxsxMtZTsHEwcFkxNPAw5ZE9uM3UGZNurbsRvTmq12VMuttuEX?cluster=devnet)
 
 **The payment, on Circle Gateway** — the transfers API needs no authentication,
 so you can confirm the money independently of anything we host:
 
 ```sh
-curl https://gateway-api-testnet.circle.com/v1/x402/transfers/b706033c-0039-415a-a53f-f6922954d3b5
-curl https://gateway-api-testnet.circle.com/v1/x402/transfers/f524b7ca-b7bc-4045-8f30-e3199733bd96
+curl https://gateway-api-testnet.circle.com/v1/x402/transfers/c77ea2a6-6d79-4192-bda6-619b815afdf5
+curl https://gateway-api-testnet.circle.com/v1/x402/transfers/a2bddc23-21b0-46f3-9f38-93d783ad6595
 ```
 
-Each returns `"amount": "5000"` on `eip155:5042002`. There is **no third
-transfer** — the liar's authorization was signed and then never redeemed.
+Each returns `"amount": "5000"` on `eip155:5042002`, paid to the seller's
+**own** payout EOA (derived from its Solana identity key — no placeholder
+addresses). There is **no third transfer** — the liar's authorization was
+signed and then never redeemed.
 
-**The consequence, back on Solana** — `GET /sellers` now shows the honest
-sellers at reputation `510` (`matched=1`) and the liar at `450`
-(`outliers=1`). Accuracy is monetized and inaccuracy is priced, automatically.
+**The full audit record** — who answered what, each answer's signature and the
+seller pubkey to check it against, and what settled:
+
+```sh
+curl https://coordinator-production-b0e4.up.railway.app/verify/597a99fbb2db745ddeca39b47f5e3f0d56b0285dc796893494b8a057463f422d
+```
+
+**The lifecycle closes on-chain.** An earlier purchase on this same deployment
+has already gone the whole way: its transfers read `"status": "completed"` with
+the on-chain batch transaction
+[`0xc19dffcb…d46686`](https://testnet.arcscan.app/tx/0xc19dffcbc2f2b21b1eea57134c394d83f4fc43937f6cc1d0abccb6c521d46686)
+on Arc Testnet, and its settlement rows flipped `PENDING → AVAILABLE`
+([audit](https://coordinator-production-b0e4.up.railway.app/verify/b7500b1c6742b620ebbec6a0f60cea54bdfc939d58c4c774685177ce6e4e230b)).
+Authorization signed → redeemed → batched → settled on-chain, all verifiable.
+
+**The consequence, back on Solana** — `GET /sellers` mirrors the on-chain
+record: the honest sellers stand at reputation `540` (`matched=4`) and the liar
+at `300` (`outliers=4`), accumulated across every round these identities have
+ever served. Accuracy is monetized and inaccuracy is priced, automatically.
 
 Reproduce it against any coordinator:
 
@@ -144,7 +165,10 @@ app.use(veritasSeller({
 
 `value` is what consensus compares; `payload` is the full response delivered to
 the buyer. Sellers never serve data to a caller without payment authority — the
-middleware rejects any request missing the coordinator credential.
+middleware rejects any request missing the coordinator credential. Every answer
+is also **automatically signed with the seller's Solana identity key**, so the
+coordinator cannot misattribute or alter what a seller said — the public record
+on `/verify` is checkable against the seller's own on-chain pubkey.
 
 ---
 
@@ -201,12 +225,22 @@ mode: strict majority; no majority means the round fails and **nobody is paid**.
 Reputation updates atomically with the verdict; outliers can be slashed 10%.
 Caps: `K ≤ 7`, response ≤ 64 bytes.
 
-**Trust model, stated plainly.** In this MVP the coordinator is a trusted
-authority: it opens requests and submits the sellers' answers. The *verdict
-computation and record* are on-chain and public, so anyone can audit that
-settlement matched the verdict — trusted-but-auditable. Hardening path: sellers
-signing their own responses, a challenge/slash game, and requiring a Solana
-verdict proof before Arc settlement. See [Roadmap](#roadmap).
+**Signed responses.** Every seller answer is signed with the seller's Solana
+identity key (ed25519 over the query id and the value) — the same key that owns
+its on-chain SellerAccount. The coordinator verifies the signature against the
+registered pubkey before an answer can enter consensus, and republishes it on
+`GET /verify/:queryId`, so **anyone can re-check offline that every recorded
+answer really came from that seller**. A forged or altered response fails
+verification and is dropped; the coordinator cannot invent an answer a seller
+never gave. (`pnpm purchase` performs exactly this re-check client-side.)
+
+**Trust model, stated plainly.** The coordinator still chooses which sellers to
+query and submits the round to Solana, but it can no longer forge or alter
+response content — signatures made that check public. The *verdict computation
+and record* are on-chain, so anyone can audit that settlement matched the
+verdict. Remaining hardening: commit–reveal (so one seller's answer can't be
+leaked to another), a challenge/slash game, and requiring a Solana verdict
+proof before Arc settlement. See [Roadmap](#roadmap).
 
 ---
 
@@ -292,12 +326,15 @@ Deployment runbook (Railway + Neon + Vercel): [`docs/DEPLOY.md`](docs/DEPLOY.md)
 Delivered in phases 0–4: the on-chain program, coordinator, both SDKs, the MCP
 server, the demo, the explorer, and the real Circle settlement path.
 
+**Delivered since the checkpoint plan was written:** signed seller responses —
+every answer now carries an ed25519 signature by the seller's Solana identity
+key, verified on ingest and re-checkable by anyone from `/verify` (this was
+roadmap item 1's first half).
+
 Next, in priority order:
 
-1. **Signed seller responses + commit–reveal** — sellers sign their own values so
-   the coordinator cannot forge them, and cannot leak one seller's answer to
-   another. This is what makes the on-chain ledger trustworthy without trusting
-   the operator.
+1. **Commit–reveal** — sellers commit a hash before revealing values, so the
+   coordinator cannot leak one seller's answer to another mid-round.
 2. **Staking and slashing through the SDK** — the Anchor instructions and 10%
    slash exist and are Rust-tested; exposing them puts real economics on Solana.
 3. **Challenge + slash game** — bonded disputes for contested verdicts.
@@ -309,7 +346,9 @@ Next, in priority order:
 
 Stated deliberately, because they shape how the current numbers should be read:
 
-- The coordinator is trusted-but-auditable (see above) — item 1 above fixes this.
+- The coordinator can no longer forge responses (they are seller-signed), but it
+  still chooses which sellers to query and when to submit rounds — items 1 and 4
+  above shrink that further.
 - Consensus proves **independent corroboration, not ground truth**. If sellers
   share an upstream, agreement is not evidence. Source diversity in discovery
   and content-addressed mode (K=1) address this; it is not fully solved.

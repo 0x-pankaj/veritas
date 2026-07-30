@@ -106,6 +106,10 @@ export interface FanoutRequest {
 export interface FanoutResponse {
   value: string;
   payload?: unknown;
+  /** ed25519 signature (0x-hex) of `responseSigMessage(queryId, value)` by
+   *  the seller's Solana identity key. The coordinator rejects responses
+   *  whose signature does not verify against the registered pubkey. */
+  sig?: string;
 }
 
 export interface VerificationRequestDTO {

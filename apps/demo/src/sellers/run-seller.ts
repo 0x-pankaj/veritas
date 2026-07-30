@@ -2,7 +2,7 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { registerSeller, type Seller } from "@veritas/seller";
 import { createDemoSellerApp, type DemoSellerApp } from "./seller-factory.js";
-import { loadOrCreateKeypair } from "./keys.js";
+import { loadOrCreateKeypair, payoutAddressFor } from "./keys.js";
 import { SELLER_DEFS, type Role } from "./definitions.js";
 
 export const COORDINATOR_URL =
@@ -28,7 +28,7 @@ export async function startSeller(role: Role, port?: number): Promise<RunningSel
   const built = createDemoSellerApp({
     name: def.name,
     keypair,
-    payoutAddress: def.payoutAddress,
+    payoutAddress: payoutAddressFor(role, keypair),
     price: def.price,
     coordinatorApiKey: COORDINATOR_API_KEY,
     coordinatorUrl: COORDINATOR_URL,
@@ -68,7 +68,7 @@ export async function registerRunningSeller(
   const registered = await registerSeller({
     name: def.name,
     solanaKeypair: running.seller.keypair,
-    payoutAddress: def.payoutAddress,
+    payoutAddress: running.seller.payoutAddress,
     endpoint: running.url,
     price: def.price,
     mode: "consensus",

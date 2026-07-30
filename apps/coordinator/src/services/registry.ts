@@ -1,4 +1,4 @@
-import { and, arrayContains, desc, eq } from "drizzle-orm";
+import { and, arrayContains, desc, eq, ne } from "drizzle-orm";
 import type { Db } from "../db.js";
 import { sellers, type Seller } from "../db/schema.js";
 
@@ -20,6 +20,20 @@ export async function registerSeller(
   db: Db,
   input: RegisterSellerInput,
 ): Promise<Seller> {
+  // One endpoint = one live seller. A registration with a new identity at an
+  // endpoint supersedes whoever held it (e.g. an ephemeral-key deploy that was
+  // re-keyed): the old row is suspended, not deleted — its responses and
+  // settlements remain auditable. Without this, stale rows at a live endpoint
+  // would pass the health probe and occupy discovery slots forever.
+  await db
+    .update(sellers)
+    .set({ status: "SUSPENDED" })
+    .where(
+      and(
+        eq(sellers.endpoint, input.endpoint),
+        ne(sellers.solanaPubkey, input.solanaPubkey),
+      ),
+    );
   const [row] = await db
     .insert(sellers)
     .values(input)
@@ -35,6 +49,8 @@ export async function registerSeller(
         coverage: input.coverage,
         schemaDesc: input.schemaDesc,
         freshnessSec: input.freshnessSec,
+        // Re-registering reclaims an endpoint a newer identity had taken.
+        status: "ACTIVE",
       },
     })
     .returning();

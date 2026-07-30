@@ -164,6 +164,7 @@ export function buildBuyRoutes(deps: BuyDeps) {
           sellerId: r.seller.id,
           valueOrHash: r.value,
           latencyMs: r.latencyMs,
+          signature: r.sig,
         })),
       );
 
@@ -237,9 +238,11 @@ export function buildBuyRoutes(deps: BuyDeps) {
           .select({
             sellerId: responses.sellerId,
             name: sellers.name,
+            solanaPubkey: sellers.solanaPubkey,
             valueOrHash: responses.valueOrHash,
             matched: responses.matched,
             latencyMs: responses.latencyMs,
+            signature: responses.signature,
           })
           .from(responses)
           .innerJoin(sellers, eq(responses.sellerId, sellers.id))

@@ -37,7 +37,7 @@ import {
   CircleGatewayAdapter,
   Veritas,
 } from "@veritas/agent";
-import type { Category } from "@veritas/core";
+import { verifyResponseSig, type Category } from "@veritas/core";
 
 // Precedence: CLI arg > VERITAS_FACILITATOR_URL > the deployed coordinator.
 // The arg matters because a local .env normally points VERITAS_FACILITATOR_URL
@@ -139,14 +139,30 @@ for (let i = 0; i < 24 && audit.settlements.length === 0; i++) {
 const nameById = new Map(catalog.map((s) => [s.id, s.name]));
 const paidById = new Map(audit.settlements.map((s) => [s.sellerId, s]));
 
+// Re-verify every seller signature LOCALLY — ed25519 over
+// (queryId, value) against the seller's on-chain Solana identity. This is
+// the point of signed responses: you do not have to trust the coordinator's
+// record of who said what.
+type AuditResponse = (typeof audit.responses)[number] & {
+  signature?: string | null;
+  solanaPubkey?: string;
+};
+const sigState = (r: AuditResponse): "valid" | "INVALID" | "unsigned" => {
+  if (!r.signature) return "unsigned";
+  return verifyResponseSig(r.signature, bought.queryId, r.valueOrHash, r.solanaPubkey ?? "")
+    ? "valid"
+    : "INVALID";
+};
+
 console.log(`\n─── who answered ──────────────────────────────────────`);
-for (const r of audit.responses) {
+for (const r of audit.responses as AuditResponse[]) {
   const paid = paidById.get(r.sellerId);
   console.log(
     `  ${(nameById.get(r.sellerId) ?? r.sellerId).padEnd(16)}` +
       `${String(r.valueOrHash).padEnd(12)}` +
       `${r.matched ? "matched " : "OUTLIER "}` +
-      `${paid ? `paid ${usdc(paid.amount)}` : "paid $0"}`,
+      `${(paid ? `paid ${usdc(paid.amount)}` : "paid $0").padEnd(14)}` +
+      `sig ${sigState(r)}`,
   );
 }
 
@@ -187,6 +203,15 @@ for (const l of losers) {
   if (paidById.has(l.sellerId)) {
     console.error(
       `\nFAIL: outlier ${nameById.get(l.sellerId) ?? l.sellerId} was paid`,
+    );
+    ok = false;
+  }
+}
+for (const r of audit.responses as AuditResponse[]) {
+  if (sigState(r) === "INVALID") {
+    console.error(
+      `\nFAIL: recorded response for ${nameById.get(r.sellerId) ?? r.sellerId} ` +
+        `does not verify against its Solana identity — the record was altered`,
     );
     ok = false;
   }

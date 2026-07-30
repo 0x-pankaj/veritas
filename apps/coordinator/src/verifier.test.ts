@@ -66,6 +66,7 @@ describe.skipIf(gated)("solana writer (devnet)", () => {
         value: values[i]!,
         payload: { price: values[i] },
         latencyMs: 10,
+        sig: null,
       }));
 
       const queryIdHex = Buffer.from(

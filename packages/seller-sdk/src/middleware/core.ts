@@ -4,6 +4,7 @@ import {
   TESTNET,
   build402Body,
   commitment,
+  signResponse,
   type FanoutRequest,
   type FanoutResponse,
   type UsdcAmount,
@@ -88,6 +89,14 @@ export async function handleServe(
   const body: FanoutResponse & { commitment?: string } = {
     value: result.value,
     payload: result.payload ?? null,
+    // Signed with the seller's Solana identity key — the coordinator verifies
+    // against the registered pubkey and republishes the signature on /verify,
+    // so recorded answers are non-forgeable and third-party checkable.
+    sig: signResponse(
+      parsed.data.queryId,
+      result.value,
+      opts.seller.keypair.secretKey,
+    ),
   };
   if (modeOf(opts) === "content-addressed") {
     body.commitment = commitment(body.payload);

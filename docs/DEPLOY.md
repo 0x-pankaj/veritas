@@ -82,6 +82,22 @@ No public domain — the coordinator reaches them over the private network.
 | `COORDINATOR_API_KEY` | same secret as the coordinator |
 | `SOLANA_RPC` | same Devnet RPC |
 | `DEVNET_KEYPAIR` | Devnet key with SOL (funds + registers the 3 sellers) |
+| `DEMO_HONEST_KEYPAIR` | pinned Solana identity for `acme-prices` (JSON byte array) |
+| `DEMO_HONEST2_KEYPAIR` | pinned identity for `globex-feed` |
+| `DEMO_LIAR_KEYPAIR` | pinned identity for `sketchy-oracle` |
+
+**Pin the identities.** The `.keys/` dir is `.dockerignore`d, so without the
+`DEMO_*_KEYPAIR` vars each deploy mints fresh keypairs inside the container —
+new SellerAccount PDAs, reputation reset to 500, and orphaned registry rows.
+(`scripts/railway-secrets.sh` pushes the local `apps/demo/.keys/*.json` files.)
+The coordinator self-heals the registry side — a registration whose endpoint is
+already held by a different identity suspends the old row — but reputation
+continuity needs stable keys.
+
+**Payout addresses are derived, not configured.** Each seller's Arc payout EOA
+is derived from its Solana identity key (EVM privkey = keccak256 of the ed25519
+seed), so whoever holds the seller's key also controls its settled USDC.
+Override per role with `DEMO_<ROLE>_PAYOUT` if you want an external address.
 
 Deploy **after** the coordinator is healthy — the sellers register against it on
 boot:

@@ -8,8 +8,6 @@ export interface DemoSellerDef {
   name: string;
   /** Default listen port (override with PORT). */
   port: number;
-  /** Demo EVM payout address (Gateway balance destination). */
-  payoutAddress: string;
   /** Price per call, USDC base units. */
   price: string;
   poisonable: boolean;
@@ -20,13 +18,14 @@ export interface DemoSellerDef {
 /**
  * The three demo sellers (PRODUCT §demo): two honest price feeds that agree
  * within tolerance and one liar that (by default) poisons its answer.
+ * Payout addresses are not listed here — each is a real EOA derived from the
+ * seller's Solana identity key (see `payoutAddressFor` in keys.ts).
  */
 export const SELLER_DEFS: Record<Role, DemoSellerDef> = {
   honest: {
     role: "honest",
     name: "acme-prices",
     port: 9101,
-    payoutAddress: "0x1111111111111111111111111111111111111111",
     price: "5000",
     poisonable: false,
     quote: () => honestQuote(DEMO.honestOffsets[0]),
@@ -35,7 +34,6 @@ export const SELLER_DEFS: Record<Role, DemoSellerDef> = {
     role: "honest2",
     name: "globex-feed",
     port: 9102,
-    payoutAddress: "0x2222222222222222222222222222222222222222",
     price: "5000",
     poisonable: false,
     quote: () => honestQuote(DEMO.honestOffsets[1]),
@@ -44,7 +42,6 @@ export const SELLER_DEFS: Record<Role, DemoSellerDef> = {
     role: "liar",
     name: "sketchy-oracle",
     port: 9103,
-    payoutAddress: "0x3333333333333333333333333333333333333333",
     price: "5000",
     poisonable: true,
     // Poisoned by default so the demo shows the liar getting caught; the

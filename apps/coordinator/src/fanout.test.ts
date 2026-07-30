@@ -1,6 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { serve, type ServerType } from "@hono/node-server";
 import { Hono } from "hono";
+import { Keypair } from "@solana/web3.js";
+import { signResponse } from "@veritas/core";
 import { fanout, quorumMet } from "./services/fanout.js";
 import type { Seller } from "./db/schema.js";
 
@@ -10,6 +12,10 @@ function mockSeller(opts: {
   price: string;
   delayMs?: number;
   rejectBadKey?: boolean;
+  /** Sign responses with this identity (the real-SDK behaviour). */
+  keypair?: Keypair;
+  /** Attach a signature that verifies against nobody (forgery). */
+  forgeSig?: boolean;
 }): Hono {
   return new Hono().post("/veritas/serve", async (c) => {
     if (opts.rejectBadKey && c.req.header("x-veritas-coordinator") !== API_KEY) {
@@ -20,14 +26,18 @@ function mockSeller(opts: {
     return c.json({
       value: opts.price,
       payload: { symbol: body.symbol, price: opts.price, ts: 1 },
+      ...(opts.keypair
+        ? { sig: signResponse(body.queryId, opts.price, opts.keypair.secretKey) }
+        : {}),
+      ...(opts.forgeSig ? { sig: `0x${"ab".repeat(64)}` } : {}),
     });
   });
 }
 
-function sellerRow(id: string, endpoint: string): Seller {
+function sellerRow(id: string, endpoint: string, solanaPubkey = `pk-${id}`): Seller {
   return {
     id,
-    solanaPubkey: `pk-${id}`,
+    solanaPubkey,
     payoutAddress: "0x1111111111111111111111111111111111111111",
     name: id,
     endpoint,
@@ -45,6 +55,15 @@ function sellerRow(id: string, endpoint: string): Seller {
     status: "ACTIVE",
     createdAt: new Date(),
   };
+}
+
+/** Boot one Hono app on an ephemeral port. */
+function listen(app: Hono): Promise<{ endpoint: string; close: () => void }> {
+  return new Promise((resolve) => {
+    const srv: ServerType = serve({ fetch: app.fetch, port: 0 }, (info) => {
+      resolve({ endpoint: `http://127.0.0.1:${info.port}`, close: () => srv.close() });
+    });
+  });
 }
 
 describe("fanout engine", () => {
@@ -92,6 +111,65 @@ describe("fanout engine", () => {
       { coordinatorApiKey: "wrong-key", timeoutMs: 800 },
     );
     expect(results.length).toBe(0);
+  });
+
+  it("verifies a signed response against the registered pubkey", async () => {
+    const kp = Keypair.generate();
+    const app = mockSeller({ price: "50000.00", keypair: kp });
+    const { endpoint, close } = await listen(app);
+    try {
+      const seller = sellerRow("signed", endpoint, kp.publicKey.toBase58());
+      const results = await fanout(
+        { queryId: "q-signed", category: "crypto-prices", symbol: "BTC/USD" },
+        [seller],
+        { coordinatorApiKey: API_KEY, timeoutMs: 800 },
+      );
+      expect(results.length).toBe(1);
+      expect(results[0]!.sig).toMatch(/^0x[0-9a-f]{128}$/);
+    } finally {
+      close();
+    }
+  });
+
+  it("drops a response whose signature does not verify (forgery)", async () => {
+    const app = mockSeller({ price: "50000.00", forgeSig: true });
+    const { endpoint, close } = await listen(app);
+    try {
+      const seller = sellerRow("forged", endpoint, Keypair.generate().publicKey.toBase58());
+      const results = await fanout(
+        { queryId: "q-forged", category: "crypto-prices", symbol: "BTC/USD" },
+        [seller],
+        { coordinatorApiKey: API_KEY, timeoutMs: 800 },
+      );
+      expect(results.length).toBe(0);
+    } finally {
+      close();
+    }
+  });
+
+  it("drops a signed response if the value was tampered with in transit", async () => {
+    const kp = Keypair.generate();
+    // Signs for one value but serves another — a MITM/coordinator rewrite.
+    const app = new Hono().post("/veritas/serve", async (c) => {
+      const body = await c.req.json();
+      return c.json({
+        value: "99999.00",
+        payload: null,
+        sig: signResponse(body.queryId, "50000.00", kp.secretKey),
+      });
+    });
+    const { endpoint, close } = await listen(app);
+    try {
+      const seller = sellerRow("tampered", endpoint, kp.publicKey.toBase58());
+      const results = await fanout(
+        { queryId: "q-tampered", category: "crypto-prices", symbol: "BTC/USD" },
+        [seller],
+        { coordinatorApiKey: API_KEY, timeoutMs: 800 },
+      );
+      expect(results.length).toBe(0);
+    } finally {
+      close();
+    }
   });
 
   it("quorum math", () => {
