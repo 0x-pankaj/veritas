@@ -136,6 +136,7 @@ that credential, and the seller owns it.
 
 Integration is a one-time registration, then five lines of middleware on an
 endpoint they already run. Adapters ship for Express, Fastify and Next.
+Full guide: [`docs/SELLERS.md`](docs/SELLERS.md).
 
 ```ts
 import { registerSeller, veritasSeller } from "@veritas/seller";
@@ -198,7 +199,8 @@ const { data, verdict, finalCost } = await veritas.buy({
 
 Any MCP-capable agent — Claude included — can buy verified data directly through
 `@veritas/mcp`, which exposes `buy_verified_data` and `list_available_data` as
-tools.
+tools; with `ARC_PRIVATE_KEY` set it settles real USDC on Arc. Full guide (SDK,
+cost model, auditing, MCP config): [`docs/AGENTS.md`](docs/AGENTS.md).
 
 ## How it works
 
@@ -317,7 +319,15 @@ apps/demo/           the "liar caught by consensus" live demo + 3 demo sellers
 tests/e2e/           @veritas/e2e      full-system + real-money end-to-end tests
 ```
 
-Deployment runbook (Railway + Neon + Vercel): [`docs/DEPLOY.md`](docs/DEPLOY.md).
+### Documentation
+
+| Guide | For |
+|---|---|
+| [`docs/SELLERS.md`](docs/SELLERS.md) | data providers — register, serve, get paid, build an on-chain accuracy record |
+| [`docs/AGENTS.md`](docs/AGENTS.md) | buyers — the one-call SDK, cost model, auditing, and the MCP server for AI agents |
+| [`docs/API.md`](docs/API.md) | the coordinator's public HTTP API, incl. how to re-verify signatures and settlements yourself |
+| [`docs/DEMO.md`](docs/DEMO.md) | the scripted 2-minute demo, claim by claim |
+| [`docs/DEPLOY.md`](docs/DEPLOY.md) | deployment runbook (Railway + Neon + Vercel) |
 
 ---
 
