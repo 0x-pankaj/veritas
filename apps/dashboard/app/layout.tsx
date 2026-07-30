@@ -18,7 +18,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <Link href="/" className="brand">
               Veritas
             </Link>
-            <span className="muted">seller dashboard · truth-ledger explorer</span>
+            <Link href="/">Explorer</Link>
+            <Link href="/docs">Docs</Link>
+            <a
+              href="https://github.com/0x-pankaj/veritas"
+              target="_blank"
+              rel="noreferrer"
+            >
+              GitHub
+            </a>
+            <span className="muted">verified data · Solana truth · USDC on Arc</span>
           </nav>
           {children}
         </div>

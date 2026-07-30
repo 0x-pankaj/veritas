@@ -176,3 +176,152 @@ tbody tr:hover {
   font-size: 13px;
   color: var(--muted);
 }
+
+/* ── docs ─────────────────────────────────────────────── */
+.doc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 18px;
+}
+@media (max-width: 720px) {
+  .doc-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.doc-card {
+  display: block;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  color: var(--text);
+}
+.doc-card:hover {
+  background: var(--panel-2);
+  text-decoration: none;
+}
+.doc-card-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.doc-card-blurb {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.doc-layout {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .doc-layout {
+    grid-template-columns: 1fr;
+  }
+  .doc-sidebar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    position: static;
+  }
+}
+.doc-sidebar {
+  position: sticky;
+  top: 24px;
+  display: grid;
+  gap: 2px;
+}
+.doc-link {
+  padding: 7px 10px;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.doc-link:hover {
+  color: var(--text);
+  text-decoration: none;
+  background: var(--panel);
+}
+.doc-link.active {
+  color: var(--text);
+  background: var(--panel);
+  font-weight: 600;
+}
+
+.md {
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.65;
+}
+.md h1 {
+  font-size: 26px;
+  margin: 0 0 10px;
+}
+.md h2 {
+  font-size: 19px;
+  margin: 34px 0 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.md h3 {
+  font-size: 16px;
+  margin: 24px 0 8px;
+}
+.md p,
+.md ul,
+.md ol {
+  margin: 0 0 14px;
+}
+.md li {
+  margin-bottom: 6px;
+}
+.md code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1.5px 5px;
+}
+.md pre {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin: 0 0 16px;
+}
+.md pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.md blockquote {
+  margin: 0 0 14px;
+  padding: 10px 16px;
+  border-left: 3px solid var(--accent);
+  background: var(--panel);
+  border-radius: 0 10px 10px 0;
+  color: var(--muted);
+}
+.md blockquote p {
+  margin: 0;
+}
+.md table {
+  display: block;
+  overflow-x: auto;
+  margin: 0 0 16px;
+}
+.md hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 28px 0;
+}
+.md img {
+  max-width: 100%;
+}
