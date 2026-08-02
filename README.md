@@ -26,7 +26,7 @@ Phases 0–4 complete. The system is deployed and settling **real testnet USDC**
 | Postgres mirror | Neon | **live** — migrations applied on boot |
 | Circle settlement | Arc Testnet | **real** — `MOCK_SETTLE=false`, reconciler every 15s |
 | Dashboard + docs | Vercel | **live** — [veritas-dashboard-psi.vercel.app](https://veritas-dashboard-psi.vercel.app/) ([docs](https://veritas-dashboard-psi.vercel.app/docs)) |
-| Demo UI (buy button) | Vercel | deploying — see [`docs/DEPLOY.md`](docs/DEPLOY.md) |
+| Demo UI (buy button) | Vercel | **live** — [veritas-demo-three.vercel.app](https://veritas-demo-three.vercel.app/) (real ~$0.01 purchases) |
 
 Quality gates: `pnpm -w typecheck` green (14/14), `pnpm -w test` green
 (56 TypeScript tests + 7 Rust litesvm tests; 7 further tests are env-gated on a
